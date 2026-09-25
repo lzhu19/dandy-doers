@@ -13,6 +13,13 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite packages/react-frontend"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
