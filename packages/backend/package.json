@@ -10,6 +10,7 @@
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "jest": "^30.5.2"
+    "jest": "^30.5.2",
+    "mongoose": "^9.10.2"
   }
 }
