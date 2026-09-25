@@ -1,0 +1,18 @@
+{
+  "name": "dandy-doers",
+  "version": "1.0.0",
+  "description": "Group Name: Dandy Doers",
+  "homepage": "https://github.com/lzhu19/dandy-doers#readme",
+  "bugs": {
+    "url": "https://github.com/lzhu19/dandy-doers/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lzhu19/dandy-doers.git"
+  },
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
