@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 function TableHeader() {
   return (
@@ -19,31 +19,25 @@ function TableBody(props) {
         <td>{row.name}</td>
         <td>{row.job}</td>
         <td>{row._id}</td>
-        <td> 
-          <button onClick = {() => props.removeCharacter(row._id)}>
-            Delete
-          </button>
+        <td>
+          <button onClick={() => props.removeCharacter(row._id)}>Delete</button>
         </td>
       </tr>
     );
   });
-  return (
-    <tbody>
-      {rows}
-    </tbody>
-  );
+  return <tbody>{rows}</tbody>;
 }
 
 function Table(props) {
-    return (
-       <table>
-          <TableHeader />
-          <TableBody 
-            characterData={props.characterData} 
-            removeCharacter={props.removeCharacter}
-          />
-      </table>
-    );
+  return (
+    <table>
+      <TableHeader />
+      <TableBody
+        characterData={props.characterData}
+        removeCharacter={props.removeCharacter}
+      />
+    </table>
+  );
 }
 
 export default Table;
