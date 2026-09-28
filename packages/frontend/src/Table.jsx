@@ -3,7 +3,6 @@ function TableHeader() {
     <thead>
       <tr>
         <th>Task</th>
-        <th>Job</th>
         <th>ID</th>
       </tr>
     </thead>
@@ -15,7 +14,6 @@ function TableBody(props) {
     return (
       <tr key={row._id}>
         <td>{row.name}</td>
-        <td>{row.job}</td>
         <td>{row._id}</td>
         <td>
           <button onClick={() => props.removeTask(row._id)}>Delete</button>

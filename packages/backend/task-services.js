@@ -7,20 +7,14 @@ mongoose
   .connect('mongodb://localhost:27017/tasks')
   .catch((error) => console.log(error));
 
-function getTasks(name, job) {
+function getTasks(name) {        
   let promise;
-  if (name === undefined && job === undefined) {
+  if (name === undefined) {       
     // /tasks
     promise = taskModel.find();
-  } else if (name && !job) {
+  } else if (name) {      //&& !job
     // /tasks?name=<name>
     promise = findTaskByName(name);
-  } else if (job && !name) {
-    // /tasks?job=<job>
-    promise = findTaskByJob(job);
-  } else if (job && name) {
-    // /tasks?name=<name>&job=<job>
-    promise = findTaskByNameAndJob(name, job);
   }
   return promise;
 }
@@ -40,16 +34,6 @@ function addTask(task) {
 function findTaskByName(name) {
   // /tasks?name=<name>
   return taskModel.find({ name: name });
-}
-
-function findTaskByJob(job) {
-  // /tasks?job=<job>
-  return taskModel.find({ job: job });
-}
-
-function findTaskByNameAndJob(name, job) {
-  // /tasks?name=<name>&job=<job>
-  return taskModel.find({ name: name, job: job });
 }
 
 function deleteTask(id) {

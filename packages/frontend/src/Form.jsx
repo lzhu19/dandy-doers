@@ -4,42 +4,33 @@ function Form(props) {
   const [person, setPerson] = useState({
     // initial state
     name: '',
-    job: '',
   });
 
   function handleChange(event) {
-    const { name, value } = event.target;
-    if (name === 'job') {
-      setPerson({ name: person['name'], job: value });
+    const { task, value } = event.target;
+    if (task) {   
+      setPerson({ name: person['task']});  
     } else {
-      setPerson({ name: value, job: person['job'] });
+      setPerson({ name: value});   
     }
   }
 
   function submitForm() {
     props.handleSubmit(person);
-    setPerson({ name: '', job: '' });
+    setPerson({ name: ''}); //, job: '' 
   }
 
   return (
     <form>
-      <label htmlFor="name">Name</label>
+      <label htmlFor="task">Task</label>
       <input
         type="text"
-        name="name"
-        _id="name"
-        value={person.name}
+        task="task"
+        _id="task"
+        value={person.task}
         onChange={handleChange}
       />
-      <label htmlFor="job">Job</label>
-      <input
-        type="text"
-        name="job"
-        _id="job"
-        value={person.job}
-        onChange={handleChange}
-      />
-      <input type="button" value="Submit" onClick={submitForm} />
+      <input type="button" value="Add" onClick={submitForm} />
     </form>
   );
 }
