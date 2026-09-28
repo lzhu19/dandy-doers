@@ -5,7 +5,8 @@
   "type": "module",
   "main": "backend.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "start": "node backend.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
