@@ -6,6 +6,7 @@
   "main": "backend.js",
   "scripts": {
     "test": "jest",
+    "dev": "npx nodemon backend.js",
     "start": "node backend.js"
   },
   "dependencies": {
