@@ -3,35 +3,35 @@ import Table from './Table';
 import Form from './Form';
 
 function MyApp() {
-  const [characters, setCharacters] = useState([]);
+  const [tasks, setTasks] = useState([]);
 
-  function fetchUsers() {
-    const promise = fetch('http://localhost:8000/users');
+  function fetchTasks() {
+    const promise = fetch('http://localhost:8000/tasks');
     return promise;
   }
 
-  function postUser(person) {
-    const promise = fetch('http://localhost:8000/users', {
+  function postTask(job) {
+    const promise = fetch('http://localhost:8000/tasks', {
       method: 'POST',
       headers: {
         'Content-type': 'application/json',
       },
-      body: JSON.stringify(person),
+      body: JSON.stringify(job),
     });
     return promise;
   }
 
-  function removeOneCharacter(id) {
-    // removes a character with the given id
-    const promise = fetch(`http://localhost:8000/users/${id}`, {
+  function removeOneTask(id) {
+    // removes a task with the given id
+    const promise = fetch(`http://localhost:8000/tasks/${id}`, {
       method: 'DELETE',
     });
 
     promise
       .then((response) => {
         if (response.status === 204) {
-          setCharacters((currentCharacters) =>
-            currentCharacters.filter((character) => character._id !== id)
+          setTasks((currentTasks) =>
+            currentTasks.filter((task) => task._id !== id)
           );
         }
       })
@@ -40,19 +40,19 @@ function MyApp() {
       });
   }
 
-  function updateList(person) {
-    // updates the list of characters if the form is submitted.
-    // setCharacters([...characters, person]);
-    postUser(person)
+  function updateList(job) {
+    // updates the list of tasks if the form is submitted.
+    // setTasks([...tasks, job]);
+    postTask(job)
       .then((response) => {
         if (response.status === 201) return response.json();
         return null;
       })
-      .then((addedUser) => {
-        if (addedUser !== null) {
-          setCharacters((currentCharacters) => [
-            ...currentCharacters,
-            addedUser,
+      .then((addedTask) => {
+        if (addedTask !== null) {
+          setTasks((currentTasks) => [
+            ...currentTasks,
+            addedTask,
           ]);
         }
       })
@@ -62,9 +62,9 @@ function MyApp() {
   }
 
   useEffect(() => {
-    fetchUsers()
+    fetchTasks()
       .then((res) => res.json()) // convert response to json
-      .then((json) => setCharacters(json)) // sets characters to the received list
+      .then((json) => setTasks(json)) // sets tasks to the received list
       .catch((error) => {
         console.log(error);
       });
@@ -72,7 +72,7 @@ function MyApp() {
 
   return (
     <div className="container">
-      <Table characterData={characters} removeCharacter={removeOneCharacter} />
+      <Table taskData={tasks} removeTask={removeOneTask} />
       <Form handleSubmit={updateList} />
     </div>
   );
