@@ -50,10 +50,7 @@ function MyApp() {
       })
       .then((addedTask) => {
         if (addedTask !== null) {
-          setTasks((currentTasks) => [
-            ...currentTasks,
-            addedTask,
-          ]);
+          setTasks((currentTasks) => [...currentTasks, addedTask]);
         }
       })
       .catch((error) => {

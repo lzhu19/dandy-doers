@@ -30,10 +30,7 @@ function Table(props) {
   return (
     <table>
       <TableHeader />
-      <TableBody
-        taskData={props.taskData}
-        removeTask={props.removeTask}
-      />
+      <TableBody taskData={props.taskData} removeTask={props.removeTask} />
     </table>
   );
 }
