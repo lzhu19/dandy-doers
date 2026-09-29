@@ -7,12 +7,13 @@ mongoose
   .connect('mongodb://localhost:27017/tasks')
   .catch((error) => console.log(error));
 
-function getTasks(name) {        
+function getTasks(name) {
   let promise;
-  if (name === undefined) {       
+  if (name === undefined) {
     // /tasks
     promise = taskModel.find();
-  } else if (name) {      //&& !job
+  } else if (name) {
+    //&& !job
     // /tasks?name=<name>
     promise = findTaskByName(name);
   }

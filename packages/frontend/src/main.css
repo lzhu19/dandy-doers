@@ -1170,9 +1170,8 @@ textarea.is-success:active {
     inset 0 1px 1px rgba(0, 0, 0, 0.1),
     0 0 6px rgb(151.4655870445, 239.0344129555, 192.1052631579);
 }
-input:placeholder,
-select:placeholder,
-textarea:placeholder {
+input::placeholder,
+textarea::placeholder {
   color: light-dark(#9f9f9f, hsl(0, 0%, 192.3529411765%));
 }
 

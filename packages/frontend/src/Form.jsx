@@ -8,16 +8,16 @@ function Form(props) {
 
   function handleChange(event) {
     const { task, value } = event.target;
-    if (task) {   
-      setPerson({ name: person['task']});  
+    if (task) {
+      setPerson({ name: person['task'] });
     } else {
-      setPerson({ name: value});   
+      setPerson({ name: value });
     }
   }
 
   function submitForm() {
     props.handleSubmit(person);
-    setPerson({ name: ''}); //, job: '' 
+    setPerson({ name: '' }); //, job: ''
   }
 
   return (
