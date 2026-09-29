@@ -4,11 +4,11 @@ Group Name: Dandy Doers
 
 ## Overview
 
-TODO: Write a README for To-do list app once sprint planning is finished
+The To-Do List is a productivity website that helps you stay organized. It is for college students who want a convenient way to stay organized with tasks they need to finish. Unlike other notes apps and paper planners, our product is easy to access, quick to update, visually aesthetic, and requires no download.
 
 ## Features
 
-- feature1
+- Seamlessly create, edit, and delete tasks without worrying about losing your task list.
 - feature2
 
 ## Setup
@@ -18,10 +18,8 @@ TODO: Write a README for To-do list app once sprint planning is finished
 
 Follow the [Google JS style guide](https://google.github.io/styleguide/jsguide.html).
 
-## Design Decisions
+Remember to run `npm run format` in the root directory before staging changes to keep formatting consistent.
+
+## Documentation
 
 - [FigJam](https://www.figma.com/board/JvA38iv8Gwq7yqDvcRrC1z/CSC3100?node-id=0-1&t=tI2XQA8jwAh9EDha-1)
-
-somethingsomethingsomethingsomething
-
-second design decision something something something seomthigndslfjkdsla;fjdkslahgdjkslagjdfsa
