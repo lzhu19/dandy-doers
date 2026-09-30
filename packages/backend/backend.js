@@ -5,6 +5,7 @@ import {
   deleteTask,
   findTaskById,
   getTasks,
+  updateTask,
 } from './task-services.js';
 
 const app = express(); // setup api
@@ -57,6 +58,20 @@ app.delete('/tasks/:id', (req, res) => {
       task
         ? res.sendStatus(204)
         : res.status(404).send('Resource not found. Cannot delete.')
+    )
+    .catch((error) => res.status(500).send(error));
+});
+
+////////// PUT //////////
+
+app.put('/tasks/:id', (req, res) => {
+  // curl -X PUT http://localhost:8000/tasks/abc123
+  // updates a task's name by id
+  updateTask(req.params.id, req.body)
+    .then((task) =>
+      task
+        ? res.status(200).json(task)
+        : res.status(404).send('Resource not found. Cannot update.')
     )
     .catch((error) => res.status(500).send(error));
 });

@@ -43,4 +43,13 @@ function deleteTask(id) {
   return taskModel.findByIdAndDelete(id);
 }
 
-export { addTask, deleteTask, findTaskById, getTasks };
+//finds a task by id & updates its name, then saves the change
+function updateTask(id, updatedFields) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.name = updatedFields.name;
+    return task.save();
+  });
+}
+
+export { addTask, deleteTask, findTaskById, getTasks, updateTask };
