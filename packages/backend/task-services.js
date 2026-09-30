@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
 import taskModel from './task.js';
+import 'dotenv/config';
 
 mongoose.set('debug', true);
 
 mongoose
-  .connect('mongodb://localhost:27017/tasks')
+  .connect(process.env.MONGODB_URI)
   .catch((error) => console.log(error));
 
 function getTasks(name) {
