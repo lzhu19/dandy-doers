@@ -4,6 +4,8 @@ import Form from './Form';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
+  //starts as null, when user clicks set EditingId to the task's id
+  const [editingId, setEditingId] = useState(null);
 
   function fetchTasks() {
     const promise = fetch('http://localhost:8000/tasks');
@@ -40,6 +42,42 @@ function MyApp() {
       });
   }
 
+  ///
+  function updateOneTask(id, newEdit) {
+    // updates a task's name for given id
+    const promise = fetch(`http://localhost:8000/tasks/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({ name: newEdit }),
+    });
+
+    promise
+      .then((response) => {
+        if (response.status === 200) return response.json();
+        return null;
+      })
+      .then((updatedTask) => {
+        if (updatedTask !== null) {
+          setTasks((currentTasks) => {
+            const newTasks = currentTasks.map((task) => {
+              if (task._id === id) {
+                return updatedTask;
+              } else {
+                return task;
+              }
+            });
+            return newTasks;
+          });
+          setEditingId(null);
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
   function updateList(job) {
     // updates the list of tasks if the form is submitted.
     // setTasks([...tasks, job]);
@@ -69,7 +107,13 @@ function MyApp() {
 
   return (
     <div className="container">
-      <Table taskData={tasks} removeTask={removeOneTask} />
+      <Table
+        taskData={tasks}
+        removeTask={removeOneTask}
+        updateTask={updateOneTask}
+        editingId={editingId}
+        setEditingId={setEditingId}
+      />
       <Form handleSubmit={updateList} />
     </div>
   );
