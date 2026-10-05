@@ -99,7 +99,7 @@ app.put('/tasks/:id/archive', (req, res) => {
 
 app.put('/tasks/:id/restore-archived', (req, res) => {
   // curl -X PUT http://localhost:8000/tasks/abc123
-  // archives a task's name by id
+  // restores an archived task's name by id
   restoreArchivedTask(req.params.id)
     .then((task) =>
       task

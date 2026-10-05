@@ -29,7 +29,7 @@ function MyApp() {
 
   function archiveTask(id) {
     // archives a task with the given id
-    console.log('Archive clicked:', id);
+    console.log('Archive clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/archive`, {
       method: 'PUT',
       headers: {
@@ -58,7 +58,7 @@ function MyApp() {
 
   function restoreArchivedTask(id) {
     // restores an archived task with the given id
-    console.log('Restore clicked:', id);
+    console.log('Restore clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/restore-archived`, {
       method: 'PUT',
       headers: {
