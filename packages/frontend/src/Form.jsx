@@ -2,32 +2,28 @@ import { useState } from 'react';
 
 function Form(props) {
   const [person, setPerson] = useState({
-    // initial state
     name: '',
   });
 
   function handleChange(event) {
-    const { task, value } = event.target;
-    if (task) {
-      setPerson({ name: person['task'] });
-    } else {
-      setPerson({ name: value });
-    }
+    const { name, value } = event.target;
+    setPerson({ [name]: value });
   }
 
   function submitForm() {
+    if (!person.name.trim()) return;
     props.handleSubmit(person);
-    setPerson({ name: '' }); //, job: ''
+    setPerson({ name: '' });
   }
 
   return (
-    <form>
-      <label htmlFor="task">Task</label>
+    <form onSubmit={(event) => event.preventDefault()}>
+      <label htmlFor="name">Task</label>
       <input
         type="text"
-        task="task"
-        _id="task"
-        value={person.task}
+        id="name"
+        name="name"
+        value={person.name}
         onChange={handleChange}
       />
       <input type="button" value="Add" onClick={submitForm} />

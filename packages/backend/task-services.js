@@ -52,4 +52,24 @@ function updateTask(id, updatedFields) {
   });
 }
 
-export { addTask, deleteTask, findTaskById, getTasks, updateTask };
+function archiveTask(id) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.archived = true;
+    return task.save();
+  });
+}
+
+function restoreArchivedTask(id) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.archived = false;
+    return task.save();
+  });
+}
+
+function getArchivedTasks(id) {
+  return taskModel.find({ archived: true });
+}
+
+export { addTask, deleteTask, findTaskById, getTasks, updateTask, archiveTask, restoreArchivedTask, getArchivedTasks};

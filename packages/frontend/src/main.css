@@ -1230,6 +1230,33 @@ caption {
     width: 100%;
   }
 }
+/**
+ * Archived Tasks Section
+ */
+
+.archived-section {
+  margin-top: 20px;
+}
+.archived-task {
+  display: grid;
+  grid-template-columns: 200px auto;
+  justify-content: start;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+/**
+ * Restore  Button
+ */
+.restore-button {
+  padding: 4px 10px;
+  font-size: 14px;
+  margin: 0;
+}
+
+
+
 /*
  * Navigation
  */
