@@ -1237,7 +1237,7 @@ caption {
 .archived-section {
   margin-top: 20px;
 }
-.archived-task {
+.archived-tasks {
   display: grid;
   grid-template-columns: 200px auto;
   justify-content: start;
@@ -1247,13 +1247,20 @@ caption {
 }
 
 /**
- * Restore  Button
+ * Archive Task  Buttos
  */
-.restore-button {
-  padding: 4px 10px;
-  font-size: 14px;
-  margin: 0;
+
+.archive-list-buttons {
+  display: flex;
+  gap: 20px;
 }
+
+.archive-list-buttons button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
 
 
 

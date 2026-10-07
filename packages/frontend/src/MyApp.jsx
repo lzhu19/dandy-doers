@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Table from './Table';
 import Form from './Form';
-import CollapsedList from './CollapsedList';
+import ArchiveList from './ArchiveList';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
@@ -97,6 +97,9 @@ function MyApp() {
           setTasks((currentTasks) =>
             currentTasks.filter((task) => task._id !== id)
           );
+          setArchivedTasks((currentTasks) =>
+            currentTasks.filter((task) => task._id !== id)
+          );
         }
       })
       .catch((error) => {
@@ -182,9 +185,10 @@ function MyApp() {
 
       />
       <Form handleSubmit={updateList} />
-      <CollapsedList
+      <ArchiveList
         archivedTasks={archivedTasks}
         restoreArchivedTask={restoreArchivedTask}
+        removeTask={removeOneTask}
       />
     </div>
   );
