@@ -4,9 +4,7 @@ import 'dotenv/config';
 
 mongoose.set('debug', true);
 
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .catch((error) => console.log(error));
+mongoose.connect(process.env.MONGODB_URI).catch((error) => console.log(error));
 
 function getTasks(name) {
   let promise;
