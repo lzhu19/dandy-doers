@@ -19,8 +19,10 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "vite",
+    "dev": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=frontend",
+    "dev-frontend": "npm run dev --workspace=frontend",
+    "dev-backend": "npm run dev --workspace=backend",
     "preview": "vite preview",
     "format": "prettier --write './**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc",
     "lint": "eslint ."
