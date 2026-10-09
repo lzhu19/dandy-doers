@@ -10,7 +10,6 @@ function MyApp() {
 
   const [archivedTasks, setArchivedTasks] = useState([]);
 
-
   function fetchTasks() {
     const promise = fetch('http://localhost:8000/tasks');
     return promise;
@@ -45,7 +44,10 @@ function MyApp() {
       })
       .then((archivedTask) => {
         if (archivedTask !== null) {
-          setArchivedTasks((currentArchivedTasks) => [...currentArchivedTasks, archivedTask,]);
+          setArchivedTasks((currentArchivedTasks) => [
+            ...currentArchivedTasks,
+            archivedTask,
+          ]);
           setTasks((currentTasks) =>
             currentTasks.filter((task) => task._id !== id)
           );
@@ -59,13 +61,16 @@ function MyApp() {
   function restoreArchivedTask(id) {
     // restores an archived task with the given id
     console.log('Restore clicked:', id); // for debugging purposes, remove later
-    const promise = fetch(`http://localhost:8000/tasks/${id}/restore-archived`, {
-      method: 'PUT',
-      headers: {
-        'Content-type': 'application/json',
-      },
-      body: JSON.stringify({ archived: false }),
-    });
+    const promise = fetch(
+      `http://localhost:8000/tasks/${id}/restore-archived`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-type': 'application/json',
+        },
+        body: JSON.stringify({ archived: false }),
+      }
+    );
 
     promise
       .then((response) => {
@@ -167,7 +172,7 @@ function MyApp() {
       .then((tasks) => {
         setTasks(tasks.filter((task) => task.archived !== true));
         setArchivedTasks(tasks.filter((task) => task.archived === true));
-    })
+      })
       .catch((error) => {
         console.log(error);
       });
@@ -182,7 +187,6 @@ function MyApp() {
         archiveTask={archiveTask}
         editingId={editingId}
         setEditingId={setEditingId}
-
       />
       <Form handleSubmit={updateList} />
       <ArchiveList

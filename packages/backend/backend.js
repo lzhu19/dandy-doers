@@ -94,7 +94,7 @@ app.put('/tasks/:id/archive', (req, res) => {
         ? res.status(200).json(task)
         : res.status(404).send('Resource not found. Cannot update.')
     )
-    .catch((error) => res.status(500).send("Could not archive task. "));
+    .catch((error) => res.status(500).send('Could not archive task. '));
 });
 
 app.put('/tasks/:id/restore-archived', (req, res) => {
@@ -106,7 +106,7 @@ app.put('/tasks/:id/restore-archived', (req, res) => {
         ? res.status(200).json(task)
         : res.status(404).send('Resource not found. Cannot update.')
     )
-    .catch((error) => res.status(500).send("Could not restore archived task."));
+    .catch((error) => res.status(500).send('Could not restore archived task.'));
 });
 
 ////////// listen //////////

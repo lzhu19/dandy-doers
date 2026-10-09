@@ -4,9 +4,7 @@ import 'dotenv/config';
 
 mongoose.set('debug', true);
 
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .catch((error) => console.log(error));
+mongoose.connect(process.env.MONGODB_URI).catch((error) => console.log(error));
 
 function getTasks(name) {
   let promise;
@@ -72,4 +70,13 @@ function getArchivedTasks(id) {
   return taskModel.find({ archived: true });
 }
 
-export { addTask, deleteTask, findTaskById, getTasks, updateTask, archiveTask, restoreArchivedTask, getArchivedTasks};
+export {
+  addTask,
+  deleteTask,
+  findTaskById,
+  getTasks,
+  updateTask,
+  archiveTask,
+  restoreArchivedTask,
+  getArchivedTasks,
+};
