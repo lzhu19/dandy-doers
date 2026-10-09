@@ -10,6 +10,8 @@ function MyApp() {
 
   const [archivedTasks, setArchivedTasks] = useState([]);
 
+  const [deletedTasks, setDeletedTasks] = useState([]);
+
   function fetchTasks() {
     const promise = fetch('http://localhost:8000/tasks');
     return promise;
@@ -58,6 +60,38 @@ function MyApp() {
       });
   }
 
+    function deleteTask(id) {
+    // deletes a task with the given id
+    console.log('Delete clicked:', id); // for debugging purposes, remove later
+    const promise = fetch(`http://localhost:8000/tasks/${id}/delete`, {
+      method: 'PUT',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({ deleted: true }),
+    });
+
+    promise
+      .then((response) => {
+        if (response.status === 200) return response.json();
+        return null;
+      })
+      .then((deletedTask) => {
+        if (deletedTask !== null) {
+          setDeletedTasks((currentDeletedTasks) => [
+            ...currentDeletedTasks,
+            deletedTask,
+          ]);
+          setTasks((currentTasks) =>
+            currentTasks.filter((task) => task._id !== id)
+          );
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
   function restoreArchivedTask(id) {
     // restores an archived task with the given id
     console.log('Restore clicked:', id); // for debugging purposes, remove later
@@ -89,6 +123,40 @@ function MyApp() {
         console.log(error);
       });
   }
+
+
+  function restoreDeletedTask(id) {
+    // restores an deleted task with the given id
+    console.log('Restore deleted clicked:', id); // for debugging purposes, remove later
+    const promise = fetch(
+      `http://localhost:8000/tasks/${id}/restore-archived`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-type': 'application/json',
+        },
+        body: JSON.stringify({ deleted: false }),
+      }
+    );
+
+    promise
+      .then((response) => {
+        if (response.status === 200) return response.json();
+        return null;
+      })
+      .then((restoredTask) => {
+        if (restoredTask !== null) {
+          setTasks((currentTasks) => [...currentTasks, restoredTask]);
+          setDeletedTasks((currentDeletedTasks) =>
+            currentDeletedTasks.filter((task) => task._id !== id)
+          );
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
 
   function removeOneTask(id) {
     // removes a task with the given id
@@ -192,6 +260,11 @@ function MyApp() {
       <ArchiveList
         archivedTasks={archivedTasks}
         restoreArchivedTask={restoreArchivedTask}
+        removeTask={removeOneTask}
+      />
+      <DeleteList
+        deletedTasks={deletedTasks}
+        restoreArchivedTask={restoreDeletedTask}
         removeTask={removeOneTask}
       />
     </div>

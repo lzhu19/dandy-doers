@@ -9,6 +9,8 @@ import {
   archiveTask,
   restoreArchivedTask,
   getArchivedTasks,
+  restoreDeletedTask,
+  getDeletedTasks,
 } from './task-services.js';
 
 const app = express(); // setup api
@@ -36,6 +38,12 @@ app.get('/tasks', (req, res) => {
 
 app.get('/tasks/archived', (req, res) => {
   getArchivedTasks()
+    .then((task) => (task ? res.status(200).json(task) : res.sendStatus(404)))
+    .catch((error) => res.status(404).send(error));
+});
+
+app.get('/tasks/deleted', (req, res) => {
+  getDeletedTasks()
     .then((task) => (task ? res.status(200).json(task) : res.sendStatus(404)))
     .catch((error) => res.status(404).send(error));
 });
@@ -97,10 +105,34 @@ app.put('/tasks/:id/archive', (req, res) => {
     .catch((error) => res.status(500).send('Could not archive task. '));
 });
 
+app.put('/tasks/:id/delete', (req, res) => {
+  // curl -X PUT http://localhost:8000/tasks/abc123
+  // delete a task's name by id
+  deleteTask(req.params.id)
+    .then((task) =>
+      task
+        ? res.status(200).json(task)
+        : res.status(404).send('Resource not found. Cannot update.')
+    )
+    .catch((error) => res.status(500).send('Could not archive task. '));
+});
+
 app.put('/tasks/:id/restore-archived', (req, res) => {
   // curl -X PUT http://localhost:8000/tasks/abc123
   // restores an archived task's name by id
   restoreArchivedTask(req.params.id)
+    .then((task) =>
+      task
+        ? res.status(200).json(task)
+        : res.status(404).send('Resource not found. Cannot update.')
+    )
+    .catch((error) => res.status(500).send('Could not restore archived task.'));
+});
+
+app.put('/tasks/:id/restore-deleted', (req, res) => {
+  // curl -X PUT http://localhost:8000/tasks/abc123
+  // restores an deleted task's name by id
+  restoreDeletedTask(req.params.id)
     .then((task) =>
       task
         ? res.status(200).json(task)
