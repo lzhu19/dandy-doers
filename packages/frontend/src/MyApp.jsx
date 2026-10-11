@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Table from './Table';
 import Form from './Form';
 import ArchiveList from './ArchiveList';
+import DeleteList from './DeleteList';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
@@ -60,7 +61,7 @@ function MyApp() {
       });
   }
 
-    function deleteTask(id) {
+  function deleteTask(id) {
     // deletes a task with the given id
     console.log('Delete clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/delete`, {
@@ -124,20 +125,16 @@ function MyApp() {
       });
   }
 
-
   function restoreDeletedTask(id) {
     // restores an deleted task with the given id
     console.log('Restore deleted clicked:', id); // for debugging purposes, remove later
-    const promise = fetch(
-      `http://localhost:8000/tasks/${id}/restore-archived`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-type': 'application/json',
-        },
-        body: JSON.stringify({ deleted: false }),
-      }
-    );
+    const promise = fetch(`http://localhost:8000/tasks/${id}/restore-deleted`, {
+      method: 'PUT',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({ deleted: false }),
+    });
 
     promise
       .then((response) => {
@@ -157,7 +154,6 @@ function MyApp() {
       });
   }
 
-
   function removeOneTask(id) {
     // removes a task with the given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
@@ -171,6 +167,9 @@ function MyApp() {
             currentTasks.filter((task) => task._id !== id)
           );
           setArchivedTasks((currentTasks) =>
+            currentTasks.filter((task) => task._id !== id)
+          );
+          setDeletedTasks((currentTasks) =>
             currentTasks.filter((task) => task._id !== id)
           );
         }
@@ -238,8 +237,17 @@ function MyApp() {
     fetchTasks()
       .then((res) => res.json()) // convert response to json
       .then((tasks) => {
-        setTasks(tasks.filter((task) => task.archived !== true));
-        setArchivedTasks(tasks.filter((task) => task.archived === true));
+        setTasks(
+          tasks.filter(
+            (task) => task.archived !== true && task.deleted !== true
+          )
+        );
+        setArchivedTasks(
+          tasks.filter(
+            (task) => task.archived === true && task.deleted !== true
+          )
+        );
+        setDeletedTasks(tasks.filter((task) => task.deleted === true));
       })
       .catch((error) => {
         console.log(error);
@@ -250,7 +258,7 @@ function MyApp() {
     <div className="container">
       <Table
         taskData={tasks}
-        removeTask={removeOneTask}
+        removeTask={deleteTask}
         updateTask={updateOneTask}
         archiveTask={archiveTask}
         editingId={editingId}
@@ -264,7 +272,7 @@ function MyApp() {
       />
       <DeleteList
         deletedTasks={deletedTasks}
-        restoreArchivedTask={restoreDeletedTask}
+        restoreDeletedTask={restoreDeletedTask}
         removeTask={removeOneTask}
       />
     </div>
