@@ -36,6 +36,9 @@ function TableBody(props) {
         <td>
           <button onClick={() => props.removeTask(row._id)}>Delete</button>
         </td>
+        <td>
+          <button onClick={() => props.archiveTask(row._id)}>Archive</button>
+        </td>
       </tr>
     );
   });
@@ -49,6 +52,8 @@ function Table(props) {
       <TableBody
         taskData={props.taskData}
         removeTask={props.removeTask}
+        archiveTask={props.archiveTask}
+        //deleteTask={props.deleteTask}
         updateTask={props.updateTask}
         editingId={props.editingId}
         setEditingId={props.setEditingId}

@@ -1,33 +1,30 @@
 import { useState } from 'react';
 
 function Form(props) {
-  const [person, setPerson] = useState({
-    // initial state
+  const [task, setTask] = useState({
     name: '',
   });
 
   function handleChange(event) {
-    const { task, value } = event.target;
-    if (task) {
-      setPerson({ name: person['task'] });
-    } else {
-      setPerson({ name: value });
-    }
+    const { value } = event.target;
+    setTask({ name: value });
   }
 
   function submitForm() {
-    props.handleSubmit(person);
-    setPerson({ name: '' }); //, job: ''
+    if (!task.name.trim()) return;
+
+    props.handleSubmit(task);
+    setTask({ name: '' });
   }
 
   return (
-    <form>
-      <label htmlFor="task">Task</label>
+    <form onSubmit={(event) => event.preventDefault()}>
+      <label htmlFor="task-name">Task</label>
       <input
         type="text"
-        task="task"
-        _id="task"
-        value={person.task}
+        id="task-name"
+        name="name"
+        value={task.name}
         onChange={handleChange}
       />
       <input type="button" value="Add" onClick={submitForm} />
