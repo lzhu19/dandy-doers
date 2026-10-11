@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import 'dotenv/config';
+import { pathToFileURL } from 'node:url';
 import {
   getTasks,
   findTaskById,
@@ -11,7 +12,6 @@ import {
   archiveTask,
   getArchivedTasks,
   restoreArchivedTask,
-  getArchivedTasks,
   restoreDeletedTask,
   getDeletedTasks,
 } from './task-services.js';
@@ -71,7 +71,10 @@ app.get('/tasks/archived', (req, res) => {
 app.get('/tasks/deleted', (req, res) => {
   getDeletedTasks()
     .then((task) => (task ? res.status(200).json(task) : res.sendStatus(404)))
-    .catch((error) => res.status(404).send(error));
+    .catch((error) => {
+      console.error('Unable to retrieve deleted tasks: ', error);
+      res.status(500).send('Unable to retrieve deleted tasks.');
+    });
 });
 
 app.get('/tasks/:id', (req, res) => {
@@ -276,4 +279,12 @@ async function startServer() {
   }
 }
 
-startServer();
+if (
+  process.argv[1] &&
+  pathToFileURL(process.argv[1]).href === import.meta.url
+) {
+  startServer();
+}
+
+export { startServer };
+export default app;
