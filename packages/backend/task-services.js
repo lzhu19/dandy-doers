@@ -36,7 +36,6 @@ function findTaskByName(name) {
   return taskModel.find({ name: name });
 }
 
-
 //finds a task by id & updates its name, then saves the change
 function updateTask(id, updatedFields) {
   return taskModel.findById(id).then((task) => {

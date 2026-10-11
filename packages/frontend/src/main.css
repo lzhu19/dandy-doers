@@ -1237,7 +1237,8 @@ caption {
 .archived-section {
   margin-top: 20px;
 }
-.archived-tasks {
+.archived-tasks,
+.deleted-tasks {
   display: grid;
   grid-template-columns: 200px auto;
   justify-content: start;
@@ -1250,12 +1251,14 @@ caption {
  * Archive Task Buttons
  */
 
-.archive-list-buttons {
+.archive-list-buttons,
+.delete-list-buttons {
   display: flex;
   gap: 20px;
 }
 
-.archive-list-buttons button {
+.archive-list-buttons button,
+.delete-list-buttons button {
   padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
