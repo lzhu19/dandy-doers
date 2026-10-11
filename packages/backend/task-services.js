@@ -36,11 +36,6 @@ function findTaskByName(name) {
   return taskModel.find({ name: name });
 }
 
-function deleteTask(id) {
-  // /tasks/<id>
-  return taskModel.findByIdAndDelete(id);
-}
-
 //finds a task by id & updates its name, then saves the change
 function updateTask(id, updatedFields) {
   return taskModel.findById(id).then((task) => {
@@ -58,6 +53,14 @@ function archiveTask(id) {
   });
 }
 
+function deleteTask(id) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.deleted = true;
+    return task.save();
+  });
+}
+
 function restoreArchivedTask(id) {
   return taskModel.findById(id).then((task) => {
     if (!task) return null;
@@ -66,8 +69,20 @@ function restoreArchivedTask(id) {
   });
 }
 
+function restoreDeletedTask(id) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.deleted = false;
+    return task.save();
+  });
+}
+
 function getArchivedTasks(id) {
   return taskModel.find({ archived: true });
+}
+
+function getDeletedTasks(id) {
+  return taskModel.find({ deleted: true });
 }
 
 export {
@@ -78,5 +93,7 @@ export {
   updateTask,
   archiveTask,
   restoreArchivedTask,
+  restoreDeletedTask,
   getArchivedTasks,
+  getDeletedTasks,
 };
