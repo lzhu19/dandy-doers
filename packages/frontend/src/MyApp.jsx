@@ -3,9 +3,19 @@ import Table from './Table';
 import Form from './Form';
 import ArchiveList from './ArchiveList';
 import DeleteList from './DeleteList';
+import ListSection from './ListSection';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
+  const [lists, setLists] = useState([]);
+  const [selectedListId, setSelectedListId] = useState(null);
+  const [isCreateListOpen, setIsCreateListOpen] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const [listCreateError, setListCreateError] = useState('');
+  const [isCreatingList, setIsCreatingList] = useState(false);
+  const [isDeleteListOpen, setIsDeleteListOpen] = useState(false);
+  const [listDeleteError, setListDeleteError] = useState('');
+  const [isDeletingList, setIsDeletingList] = useState(false);
   //starts as null, when user clicks set EditingId to the task's id
   const [editingId, setEditingId] = useState(null);
 
@@ -18,13 +28,94 @@ function MyApp() {
     return promise;
   }
 
+  function fetchLists() {
+    return fetch('http://localhost:8000/lists');
+  }
+
+  async function createList(event) {
+    event.preventDefault();
+    const name = newListName.trim();
+    if (!name) {
+      setListCreateError('Enter a list name.');
+      return;
+    }
+
+    setIsCreatingList(true);
+    setListCreateError('');
+    try {
+      const response = await fetch('http://localhost:8000/lists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name }),
+      });
+      if (response.status !== 201) {
+        throw new Error(`Unable to create list (${response.status}).`);
+      }
+
+      const createdList = await response.json();
+      setLists((currentLists) => [...currentLists, createdList]);
+      setSelectedListId(createdList._id);
+      setNewListName('');
+      setIsCreateListOpen(false);
+    } catch (error) {
+      setListCreateError(error.message);
+    } finally {
+      setIsCreatingList(false);
+    }
+  }
+
+  function openCreateListDialog() {
+    setListCreateError('');
+    setIsCreateListOpen(true);
+  }
+
+  async function deleteCurrentList() {
+    if (!currentList) return;
+
+    setIsDeletingList(true);
+    setListDeleteError('');
+    try {
+      const response = await fetch(
+        `http://localhost:8000/lists/${currentList._id}`,
+        { method: 'DELETE' }
+      );
+      if (response.status !== 204) {
+        throw new Error(`Unable to delete list (${response.status}).`);
+      }
+
+      const deletedListId = currentList._id;
+      const remainingLists = lists.filter((list) => list._id !== deletedListId);
+      const removeListTasks = (currentTasks) =>
+        currentTasks.filter(
+          (task) => String(task.listId) !== String(deletedListId)
+        );
+
+      setLists(remainingLists);
+      setTasks(removeListTasks);
+      setArchivedTasks(removeListTasks);
+      setDeletedTasks(removeListTasks);
+      setSelectedListId((currentId) =>
+        currentId === deletedListId
+          ? (remainingLists[0]?._id ?? null)
+          : currentId
+      );
+      setIsDeleteListOpen(false);
+    } catch (error) {
+      setListDeleteError(error.message);
+    } finally {
+      setIsDeletingList(false);
+    }
+  }
+
   function postTask(job) {
     const promise = fetch('http://localhost:8000/tasks', {
       method: 'POST',
       headers: {
         'Content-type': 'application/json',
       },
-      body: JSON.stringify(job),
+      body: JSON.stringify({ ...job, listId: selectedListId }),
     });
     return promise;
   }
@@ -252,26 +343,170 @@ function MyApp() {
       .catch((error) => {
         console.log(error);
       });
+    fetchLists()
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Unable to retrieve lists: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((fetchedLists) => {
+        setLists(fetchedLists);
+        setSelectedListId(
+          (currentListId) => currentListId ?? fetchedLists[0]?._id ?? null
+        );
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   }, []); // empty array here indicates that hook should be called only when component first mounts
+
+  const currentList =
+    lists.find((list) => list._id === selectedListId) ?? lists[0];
+  const currentTasks = tasks.filter(
+    (task) => String(task.listId) === String(currentList?._id)
+  );
 
   return (
     <div className="container">
-      <Table
-        taskData={tasks}
-        removeTask={deleteTask}
-        updateTask={updateOneTask}
-        archiveTask={archiveTask}
-        editingId={editingId}
-        setEditingId={setEditingId}
+      {lists.length === 0 ? (
+        <section className="empty-list-state">
+          <p>You have no task lists. Create one?</p>
+          <button type="button" onClick={openCreateListDialog}>
+            Create List
+          </button>
+        </section>
+      ) : (
+        <>
+          <header className="list-header">
+            <h1>{currentList.name}</h1>
+            <div className="list-header-actions">
+              <button type="button" onClick={openCreateListDialog}>
+                Create New List
+              </button>
+              <button
+                className="delete-list-button"
+                type="button"
+                onClick={() => {
+                  setListDeleteError('');
+                  setIsDeleteListOpen(true);
+                }}
+              >
+                Delete List
+              </button>
+            </div>
+          </header>
+          <Table
+            taskData={currentTasks}
+            removeTask={deleteTask}
+            updateTask={updateOneTask}
+            archiveTask={archiveTask}
+            editingId={editingId}
+            setEditingId={setEditingId}
+          />
+          <Form handleSubmit={updateList} />
+        </>
+      )}
+      {isCreateListOpen && (
+        <div className="list-dialog-backdrop">
+          <section
+            className="list-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-list-title"
+          >
+            <h2 id="create-list-title">Create a list</h2>
+            <form onSubmit={createList}>
+              <label htmlFor="new-list-name">List name</label>
+              <input
+                autoFocus
+                id="new-list-name"
+                name="name"
+                type="text"
+                value={newListName}
+                onChange={(event) => setNewListName(event.target.value)}
+              />
+              {listCreateError && (
+                <p className="list-create-error" role="alert">
+                  {listCreateError}
+                </p>
+              )}
+              <div className="list-dialog-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreateListOpen(false);
+                    setNewListName('');
+                    setListCreateError('');
+                  }}
+                  disabled={isCreatingList}
+                >
+                  Cancel
+                </button>
+                <button type="submit" disabled={isCreatingList}>
+                  {isCreatingList ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+      {isDeleteListOpen && currentList && (
+        <div className="list-dialog-backdrop">
+          <section
+            className="list-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-list-title"
+          >
+            <h2 id="delete-list-title">Permanently delete list?</h2>
+            <p>
+              “{currentList.name}” and all its tasks will be permanently
+              deleted, including archived and deleted tasks. This action cannot
+              be undone.
+            </p>
+            {listDeleteError && (
+              <p className="list-create-error" role="alert">
+                {listDeleteError}
+              </p>
+            )}
+            <div className="list-dialog-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteListOpen(false);
+                  setListDeleteError('');
+                }}
+                disabled={isDeletingList}
+              >
+                Cancel
+              </button>
+              <button
+                className="confirm-delete-list-button"
+                type="button"
+                onClick={deleteCurrentList}
+                disabled={isDeletingList}
+              >
+                {isDeletingList ? 'Deleting...' : 'Permanently Delete'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      <ListSection
+        lists={lists}
+        selectedListId={currentList?._id}
+        onSelectList={setSelectedListId}
       />
-      <Form handleSubmit={updateList} />
       <ArchiveList
         archivedTasks={archivedTasks}
+        lists={lists}
         restoreArchivedTask={restoreArchivedTask}
         removeTask={removeOneTask}
       />
       <DeleteList
         deletedTasks={deletedTasks}
+        lists={lists}
         restoreDeletedTask={restoreDeletedTask}
         removeTask={removeOneTask}
       />
