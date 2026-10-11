@@ -9,6 +9,7 @@ import {
   addTask,
   updateTask,
   deleteTask,
+  permanentlyDeleteTask,
   archiveTask,
   getArchivedTasks,
   restoreArchivedTask,
@@ -298,6 +299,49 @@ describe('deleteTask', () => {
     mockingoose(Task).toReturn(new Error('Delete lookup failed'), 'findOne');
 
     await expect(deleteTask(taskId)).rejects.toThrow('Delete lookup failed');
+  });
+});
+
+describe('permanentlyDeleteTask', () => {
+  it('permanently deletes and returns the task with the given ID', async () => {
+    mockingoose(Task).toReturn((query) => {
+      const filter = query.getQuery();
+      expect(filter._id.toString()).toBe(taskId);
+      expect(filter.deleted).toBe(true);
+      return sampleDeletedTask;
+    }, 'findOneAndDelete');
+
+    const task = await permanentlyDeleteTask(taskId);
+
+    expect(task._id.toString()).toBe(taskId);
+    expect(task.name).toBe(taskName);
+    expect(task.deleted).toBe(true);
+  });
+
+  it('returns null when no task matches the given ID', async () => {
+    mockingoose(Task).toReturn(null, 'findOneAndDelete');
+
+    await expect(permanentlyDeleteTask(taskId)).resolves.toBeNull();
+  });
+
+  it('does not permanently delete a task unless it is already deleted', async () => {
+    mockingoose(Task).toReturn((query) => {
+      expect(query.getQuery().deleted).toBe(true);
+      return null;
+    }, 'findOneAndDelete');
+
+    await expect(permanentlyDeleteTask(taskId)).resolves.toBeNull();
+  });
+
+  it('propagates an error when permanent deletion fails', async () => {
+    mockingoose(Task).toReturn(
+      new Error('Permanent deletion failed'),
+      'findOneAndDelete'
+    );
+
+    await expect(permanentlyDeleteTask(taskId)).rejects.toThrow(
+      'Permanent deletion failed'
+    );
   });
 });
 

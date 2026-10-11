@@ -8,6 +8,7 @@ jest.unstable_mockModule('./task-services.js', () => ({
   addTask: jest.fn(),
   updateTask: jest.fn(),
   deleteTask: jest.fn(),
+  permanentlyDeleteTask: jest.fn(),
   archiveTask: jest.fn(),
   getArchivedTasks: jest.fn(),
   restoreArchivedTask: jest.fn(),
@@ -31,6 +32,7 @@ const {
   findTaskById,
   addTask,
   deleteTask,
+  permanentlyDeleteTask,
   updateTask,
   archiveTask,
   restoreArchivedTask,
@@ -209,27 +211,30 @@ describe('POST /tasks', () => {
 
 describe('DELETE /tasks/:id', () => {
   it('deletes the task and returns 204', async () => {
-    deleteTask.mockResolvedValueOnce({ _id: 'task-1', name: 'Write tests' });
+    permanentlyDeleteTask.mockResolvedValueOnce({
+      _id: 'task-1',
+      name: 'Write tests',
+    });
 
     const response = await request(app).delete('/tasks/task-1');
 
-    expect(deleteTask).toHaveBeenCalledWith('task-1');
+    expect(permanentlyDeleteTask).toHaveBeenCalledWith('task-1');
     expect(response.status).toBe(204);
   });
 
   it('returns 404 when the task is not found', async () => {
-    deleteTask.mockResolvedValueOnce(null);
+    permanentlyDeleteTask.mockResolvedValueOnce(null);
 
     const response = await request(app).delete('/tasks/missing-task');
 
-    expect(deleteTask).toHaveBeenCalledWith('missing-task');
+    expect(permanentlyDeleteTask).toHaveBeenCalledWith('missing-task');
     expect(response.status).toBe(404);
     expect(response.text).toBe('Task not found. Cannot delete.');
   });
 
   it('logs the service error and responds with a generic 500 error', async () => {
     const error = new Error('Database unavailable');
-    deleteTask.mockRejectedValueOnce(error);
+    permanentlyDeleteTask.mockRejectedValueOnce(error);
     await expectLoggedServerError(
       request(app).delete('/tasks/task-1'),
       error,

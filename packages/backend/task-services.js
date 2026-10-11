@@ -52,6 +52,10 @@ function deleteTask(id) {
   });
 }
 
+function permanentlyDeleteTask(id) {
+  return taskModel.findOneAndDelete({ _id: id, deleted: true });
+}
+
 function getArchivedTasks() {
   return taskModel.find({ archived: true });
 }
@@ -83,6 +87,7 @@ export {
   addTask,
   updateTask,
   deleteTask,
+  permanentlyDeleteTask,
   archiveTask,
   getArchivedTasks,
   restoreArchivedTask,

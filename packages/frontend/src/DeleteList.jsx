@@ -16,7 +16,9 @@ function DeleteList(props) {
               <button onClick={() => props.restoreDeletedTask(task._id)}>
                 Restore
               </button>
-              <button onClick={() => props.removeTask(task._id)}>Delete</button>
+              <button onClick={() => props.permanentlyDeleteTask(task._id)}>
+                Permanently Delete
+              </button>
             </div>
           </li>
         ))}

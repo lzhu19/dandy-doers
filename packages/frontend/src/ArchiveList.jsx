@@ -16,7 +16,7 @@ function ArchiveList(props) {
               <button onClick={() => props.restoreArchivedTask(task._id)}>
                 Restore
               </button>
-              <button onClick={() => props.removeTask(task._id)}>Delete</button>
+              <button onClick={() => props.deleteTask(task._id)}>Delete</button>
             </div>
           </li>
         ))}

@@ -177,6 +177,9 @@ function MyApp() {
           setTasks((currentTasks) =>
             currentTasks.filter((task) => task._id !== id)
           );
+          setArchivedTasks((currentTasks) =>
+            currentTasks.filter((task) => task._id !== id)
+          );
         }
       })
       .catch((error) => {
@@ -502,13 +505,13 @@ function MyApp() {
         archivedTasks={archivedTasks}
         lists={lists}
         restoreArchivedTask={restoreArchivedTask}
-        removeTask={removeOneTask}
+        deleteTask={deleteTask}
       />
       <DeleteList
         deletedTasks={deletedTasks}
         lists={lists}
         restoreDeletedTask={restoreDeletedTask}
-        removeTask={removeOneTask}
+        permanentlyDeleteTask={removeOneTask}
       />
     </div>
   );

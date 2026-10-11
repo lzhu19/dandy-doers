@@ -9,6 +9,7 @@ import {
   addTask,
   updateTask,
   deleteTask,
+  permanentlyDeleteTask,
   archiveTask,
   getArchivedTasks,
   restoreArchivedTask,
@@ -145,9 +146,7 @@ app.post('/lists', (req, res) => {
 ////////// DELETE //////////
 
 app.delete('/tasks/:id', (req, res) => {
-  // curl -X DELETE http://localhost:8000/tasks/abc123
-  // delete a task by id from the tasks list if it exists
-  deleteTask(req.params.id)
+  permanentlyDeleteTask(req.params.id)
     .then((task) =>
       task
         ? res.sendStatus(204)
