@@ -27,7 +27,12 @@ function Form(props) {
         value={task.name}
         onChange={handleChange}
       />
-      <input type="button" value="Add" onClick={submitForm} />
+      <input
+        type="button"
+        value="Add"
+        onClick={submitForm}
+        className="add-task-button"
+      />
     </form>
   );
 }

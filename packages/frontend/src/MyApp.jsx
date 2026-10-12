@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Table from './Table';
 import Form from './Form';
+import './ToDoList.css';
 import ArchiveList from './ArchiveList';
 import DeleteList from './DeleteList';
 import ListSection from './ListSection';
@@ -371,45 +372,95 @@ function MyApp() {
   );
 
   return (
-    <div className="container">
-      {lists.length === 0 ? (
-        <section className="empty-list-state">
-          <p>You have no task lists. Create one?</p>
-          <button type="button" onClick={openCreateListDialog}>
-            Create List
-          </button>
-        </section>
-      ) : (
-        <>
-          <header className="list-header">
-            <h1>{currentList.name}</h1>
-            <div className="list-header-actions">
-              <button type="button" onClick={openCreateListDialog}>
-                Create New List
-              </button>
-              <button
-                className="delete-list-button"
-                type="button"
-                onClick={() => {
-                  setListDeleteError('');
-                  setIsDeleteListOpen(true);
-                }}
-              >
-                Delete List
-              </button>
+    <>
+      <div className="main-layout">
+        <aside className="sidebar">
+          <div className="profile-icon" aria-hidden="true" />
+
+          <div>
+            <h2 className="sidebar-section-title">Upcoming</h2>
+            <div className="upcoming-box">
+              <p className="upcoming-empty-text">No upcoming tasks</p>
             </div>
-          </header>
-          <Table
-            taskData={currentTasks}
-            removeTask={deleteTask}
-            updateTask={updateOneTask}
-            archiveTask={archiveTask}
-            editingId={editingId}
-            setEditingId={setEditingId}
-          />
-          <Form handleSubmit={updateList} />
-        </>
-      )}
+          </div>
+
+          <div>
+            <h2 className="sidebar-section-title">Lists</h2>
+            <ListSection
+              lists={lists}
+              selectedListId={currentList?._id}
+              onSelectList={setSelectedListId}
+            />
+            <button
+              className="add-list-button"
+              type="button"
+              onClick={openCreateListDialog}
+            >
+              + Add List
+            </button>
+          </div>
+        </aside>
+
+        <main className="main-content">
+          {lists.length === 0 ? (
+            <section className="empty-list-state">
+              <p>You currently have no task lists</p>
+              <button type="button" onClick={openCreateListDialog}>
+                Create List
+              </button>
+            </section>
+          ) : (
+            <>
+              <div className="main-header-row">
+                <h1 className="main-header-title">{currentList.name}</h1>
+                <button
+                  className="delete-list-button"
+                  type="button"
+                  onClick={() => {
+                    setListDeleteError('');
+                    setIsDeleteListOpen(true);
+                  }}
+                >
+                  Delete List
+                </button>
+              </div>
+              <hr className="header-underline" />
+
+              <div className="task-panel">
+                {currentTasks.length === 0 ? (
+                  <p className="task-panel-empty-text">
+                    Get started by adding a task
+                  </p>
+                ) : (
+                  <Table
+                    taskData={currentTasks}
+                    removeTask={deleteTask}
+                    updateTask={updateOneTask}
+                    archiveTask={archiveTask}
+                    editingId={editingId}
+                    setEditingId={setEditingId}
+                  />
+                )}
+                <Form handleSubmit={updateList} />
+              </div>
+
+              <ArchiveList
+                archivedTasks={archivedTasks}
+                lists={lists}
+                restoreArchivedTask={restoreArchivedTask}
+                deleteTask={deleteTask}
+              />
+              <DeleteList
+                deletedTasks={deletedTasks}
+                lists={lists}
+                restoreDeletedTask={restoreDeletedTask}
+                permanentlyDeleteTask={removeOneTask}
+              />
+            </>
+          )}
+        </main>
+      </div>
+
       {isCreateListOpen && (
         <div className="list-dialog-backdrop">
           <section
@@ -496,24 +547,7 @@ function MyApp() {
           </section>
         </div>
       )}
-      <ListSection
-        lists={lists}
-        selectedListId={currentList?._id}
-        onSelectList={setSelectedListId}
-      />
-      <ArchiveList
-        archivedTasks={archivedTasks}
-        lists={lists}
-        restoreArchivedTask={restoreArchivedTask}
-        deleteTask={deleteTask}
-      />
-      <DeleteList
-        deletedTasks={deletedTasks}
-        lists={lists}
-        restoreDeletedTask={restoreDeletedTask}
-        permanentlyDeleteTask={removeOneTask}
-      />
-    </div>
+    </>
   );
 }
 
