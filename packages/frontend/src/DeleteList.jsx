@@ -5,12 +5,20 @@ function DeleteList(props) {
       <ul>
         {props.deletedTasks.map((task) => (
           <li className="deleted-tasks" key={task._id}>
-            {task.name}
+            <div>
+              <div>{task.name}</div>
+              <span className="task-list-label">
+                {props.lists.find((list) => list._id === task.listId)?.name ??
+                  'Unknown list'}
+              </span>
+            </div>
             <div className="delete-list-buttons">
               <button onClick={() => props.restoreDeletedTask(task._id)}>
                 Restore
               </button>
-              <button onClick={() => props.removeTask(task._id)}>Delete</button>
+              <button onClick={() => props.permanentlyDeleteTask(task._id)}>
+                Permanently Delete
+              </button>
             </div>
           </li>
         ))}

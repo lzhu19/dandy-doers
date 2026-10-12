@@ -1,19 +1,10 @@
-import mongoose from 'mongoose';
 import taskModel from './task.js';
-import 'dotenv/config';
-
-mongoose.set('debug', true);
-
-mongoose.connect(process.env.MONGODB_URI).catch((error) => console.log(error));
 
 function getTasks(name) {
   let promise;
-  if (name === undefined) {
-    // /tasks
+  if (!name) {
     promise = taskModel.find();
-  } else if (name) {
-    //&& !job
-    // /tasks?name=<name>
+  } else {
     promise = findTaskByName(name);
   }
   return promise;
@@ -24,16 +15,16 @@ function findTaskById(id) {
   return taskModel.findById(id);
 }
 
+function findTaskByName(name) {
+  // /tasks?name=<name>
+  return taskModel.find({ name: name });
+}
+
 function addTask(task) {
   // /tasks
   const taskToAdd = new taskModel(task);
   const promise = taskToAdd.save();
   return promise;
-}
-
-function findTaskByName(name) {
-  // /tasks?name=<name>
-  return taskModel.find({ name: name });
 }
 
 //finds a task by id & updates its name, then saves the change
@@ -61,6 +52,14 @@ function deleteTask(id) {
   });
 }
 
+function permanentlyDeleteTask(id) {
+  return taskModel.findOneAndDelete({ _id: id, deleted: true });
+}
+
+function getArchivedTasks() {
+  return taskModel.find({ archived: true });
+}
+
 function restoreArchivedTask(id) {
   return taskModel.findById(id).then((task) => {
     if (!task) return null;
@@ -77,23 +76,21 @@ function restoreDeletedTask(id) {
   });
 }
 
-function getArchivedTasks(id) {
-  return taskModel.find({ archived: true });
-}
-
-function getDeletedTasks(id) {
+function getDeletedTasks() {
   return taskModel.find({ deleted: true });
 }
 
 export {
-  addTask,
-  deleteTask,
-  findTaskById,
   getTasks,
+  findTaskById,
+  findTaskByName,
+  addTask,
   updateTask,
+  deleteTask,
+  permanentlyDeleteTask,
   archiveTask,
+  getArchivedTasks,
   restoreArchivedTask,
   restoreDeletedTask,
-  getArchivedTasks,
   getDeletedTasks,
 };

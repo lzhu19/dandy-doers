@@ -605,6 +605,102 @@ dd {
   margin-right: auto;
 }
 
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.list-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.empty-list-state {
+  margin: 4rem auto;
+  text-align: center;
+}
+
+.empty-list-state p {
+  margin-bottom: 1rem;
+}
+
+.empty-list-state button {
+  display: block;
+  margin: 0 auto;
+}
+
+.list-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.list-header-actions button {
+  margin-bottom: 0.5rem;
+}
+
+.delete-list-button,
+.confirm-delete-list-button {
+  border-color: #b00020;
+  background: #b00020;
+}
+
+.list-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 45%);
+}
+
+.list-dialog {
+  width: min(100%, 28rem);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #ffffff;
+  background: #000000;
+  color: #ffffff;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 25%);
+}
+
+.list-dialog h2 {
+  margin-top: 0;
+}
+
+.list-dialog form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.list-dialog input {
+  width: 100%;
+  background: #ffffff;
+  color: #000000;
+}
+
+.list-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.list-dialog-actions button {
+  margin-bottom: 0;
+}
+
+.list-dialog p {
+  color: inherit;
+}
+
+.list-create-error {
+  margin: 0;
+  color: #ff8080;
+}
+
 .small-container {
   max-width: 800px;
 }
@@ -1234,9 +1330,19 @@ caption {
  * Archived Tasks Section
  */
 
+.lists-section,
 .archived-section {
   margin-top: 20px;
 }
+
+.user-list {
+  margin-bottom: 8px;
+}
+
+.user-list-select {
+  margin-bottom: 0;
+}
+
 .archived-tasks,
 .deleted-tasks {
   display: grid;
@@ -1245,6 +1351,12 @@ caption {
   align-items: center;
   gap: 12px;
   margin-bottom: 8px;
+}
+
+.task-list-label {
+  display: block;
+  font-size: 0.875rem;
+  opacity: 0.75;
 }
 
 /**
