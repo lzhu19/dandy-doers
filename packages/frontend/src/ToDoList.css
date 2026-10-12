@@ -84,6 +84,7 @@
 .main-content {
   flex: 1;
   padding: 60px;
+  color: #3a3042;
 }
 
 .main-header-row {
@@ -134,6 +135,10 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
+}
+
+.task-panel input[type='text'] {
+  color: #3a3042;
 }
 
 .task-panel-empty-text {

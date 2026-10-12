@@ -256,26 +256,61 @@ function MyApp() {
   }, []); // empty array here indicates that hook should be called only when component first mounts
 
   return (
-    <div className="container">
-      <Table
-        taskData={tasks}
-        removeTask={deleteTask}
-        updateTask={updateOneTask}
-        archiveTask={archiveTask}
-        editingId={editingId}
-        setEditingId={setEditingId}
-      />
-      <Form handleSubmit={updateList} />
-      <ArchiveList
-        archivedTasks={archivedTasks}
-        restoreArchivedTask={restoreArchivedTask}
-        removeTask={removeOneTask}
-      />
-      <DeleteList
-        deletedTasks={deletedTasks}
-        restoreDeletedTask={restoreDeletedTask}
-        removeTask={removeOneTask}
-      />
+    <div className="main-layout">
+      <aside className="sidebar">
+        <div className="profile-icon" aria-hidden="true" />
+
+        <div>
+          <h2 className="sidebar-section-title">Upcoming</h2>
+          <div className="upcoming-box">
+            <p className="upcoming-empty-text">No upcoming tasks</p>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="sidebar-section-title">Lists</h2>
+          <button className="list-button">To-Do</button>
+          <button className="add-list-button" type="button">
+            + Add List
+          </button>
+        </div>
+      </aside>
+
+      <main className="main-content">
+        <div className="main-header-row">
+          <h1 className="main-header-title">To-Do</h1>
+        </div>
+        <hr className="header-underline" />
+
+        <div className="task-panel">
+          {tasks.length === 0 ? (
+            <p className="task-panel-empty-text">
+              Get started by adding a couple of tasks
+            </p>
+          ) : (
+            <Table
+              taskData={tasks}
+              removeTask={deleteTask}
+              updateTask={updateOneTask}
+              archiveTask={archiveTask}
+              editingId={editingId}
+              setEditingId={setEditingId}
+            />
+          )}
+          <Form handleSubmit={updateList} />
+        </div>
+
+        <ArchiveList
+          archivedTasks={archivedTasks}
+          restoreArchivedTask={restoreArchivedTask}
+          removeTask={removeOneTask}
+        />
+        <DeleteList
+          deletedTasks={deletedTasks}
+          restoreDeletedTask={restoreDeletedTask}
+          removeTask={removeOneTask}
+        />
+      </main>
     </div>
   );
 }
