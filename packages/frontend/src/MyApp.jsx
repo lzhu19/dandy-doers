@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Table from './Table';
 import Form from './Form';
 import ArchiveList from './ArchiveList';
+import SearchBar from './SearchBar';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
@@ -180,6 +181,7 @@ function MyApp() {
 
   return (
     <div className="container">
+      <SearchBar taskData={tasks} />
       <Table
         taskData={tasks}
         removeTask={removeOneTask}

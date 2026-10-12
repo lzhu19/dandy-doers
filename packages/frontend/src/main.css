@@ -1260,7 +1260,25 @@ caption {
   border-radius: 6px;
   cursor: pointer;
 }
+/* 
+* Search Bar
+*/
+#myTasks {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
 
+#myTasks li {
+  border: 1px solid #ffffff;
+  margin-top: -1px; /* Prevent double borders */
+  background-color: #ffffff;
+  padding: 12px;
+  text-decoration: none;
+  font-size: 16px;
+  color: #e69f00;
+  display: block;
+}
 /*
  * Navigation
  */
