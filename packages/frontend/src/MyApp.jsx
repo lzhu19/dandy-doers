@@ -181,7 +181,11 @@ function MyApp() {
 
   return (
     <div className="container">
-      <SearchBar taskData={tasks} />
+      <SearchBar
+        taskData={tasks}
+        removeTask={removeOneTask}
+        archiveTask={archiveTask}
+      />
       <Table
         taskData={tasks}
         removeTask={removeOneTask}

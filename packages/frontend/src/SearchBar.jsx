@@ -27,8 +27,18 @@ function SearchBar(props) {
       ></input>
       <ul id="myTasks">
         {props.taskData.map((task) => (
-          <li style={{ display: 'none' }} key={task._id}>
+          <li
+            className="searched-tasks"
+            style={{ display: 'none' }}
+            key={task._id}
+          >
             {task.name}
+            <div className="search-list-buttons">
+              <button onClick={() => props.removeTask(task._id)}>Delete</button>
+              <button onClick={() => props.archiveTask(task._id)}>
+                Archive
+              </button>{' '}
+            </div>
           </li>
         ))}
       </ul>

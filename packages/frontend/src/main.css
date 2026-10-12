@@ -1277,7 +1277,21 @@ caption {
   text-decoration: none;
   font-size: 16px;
   color: #e69f00;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.search-list-buttons {
+  display: flex;
+  margin-left: auto;
+  gap: 20px;
+}
+
+.search-list-buttons button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 /*
  * Navigation
