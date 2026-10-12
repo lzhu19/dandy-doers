@@ -5,8 +5,8 @@
   "type": "module",
   "main": "backend.js",
   "scripts": {
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "test-coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test-coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "dev": "npx nodemon backend.js",
     "start": "node backend.js"
   },
@@ -19,6 +19,7 @@
     "nodemon": "1.14.10"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "mockingoose": "^3.0.0",
     "supertest": "^7.3.1"
   }
