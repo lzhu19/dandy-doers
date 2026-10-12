@@ -6,6 +6,7 @@
   "main": "backend.js",
   "scripts": {
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test-coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "dev": "npx nodemon backend.js",
     "start": "node backend.js"
   },
