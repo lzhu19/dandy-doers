@@ -17,7 +17,6 @@ import Form from './Form';
 import ArchiveList from './ArchiveList';
 import DeleteList from './DeleteList';
 
-
 //what happens before each test (mocks)
 beforeAll(() => {
   vi.stubGlobal(
@@ -65,7 +64,6 @@ beforeAll(() => {
           });
         }
 
-
         // Get all lists (empty by default)
         return Promise.resolve({
           ok: true,
@@ -76,7 +74,7 @@ beforeAll(() => {
 
       // Handle requests to /lists/list-123
       if (url === 'http://localhost:8000/lists/list-123') {
-        //delete an existing list 
+        //delete an existing list
         if (options.method === 'DELETE') {
           const list = JSON.parse(options.body);
 
@@ -88,10 +86,8 @@ beforeAll(() => {
       }
 
       // Handle unexpected URLs
-      return Promise.reject(
-        new Error(`Unexpected fetch URL: ${url}`),
-      );
-    }),
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    })
   );
 });
 
@@ -103,20 +99,19 @@ afterAll(() => {
   vi.unstubAllGlobals();
 });
 
-
 //Tests
-  //Rendering
+//Rendering
 describe('rendering', () => {
   it('renders without crashing when there are no lists or tasks', async () => {
     render(<MyApp />);
 
     expect(
-      await screen.findByText('You currently have no task lists'),
+      await screen.findByText('You currently have no task lists')
     ).toBeInTheDocument();
   });
 });
 
-  //Creates a list
+//Creates a list
 describe('createList', () => {
   it('creates a new list successfully', async () => {
     const user = userEvent.setup();
@@ -125,21 +120,14 @@ describe('createList', () => {
 
     await screen.findByText('You currently have no task lists');
 
-    await user.click(
-      screen.getByRole('button', { name: 'Create List' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Create List' }));
 
-    await user.type(
-      screen.getByLabelText('List name'),
-      'School',
-    );
+    await user.type(screen.getByLabelText('List name'), 'School');
 
-    await user.click(
-      screen.getByRole('button', { name: 'Create' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Create' }));
 
     expect(
-      await screen.findByRole('heading', { name: 'School' }),
+      await screen.findByRole('heading', { name: 'School' })
     ).toBeInTheDocument();
 
     expect(fetch).toHaveBeenCalledWith(
@@ -147,7 +135,7 @@ describe('createList', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ name: 'School' }),
-      }),
+      })
     );
   });
 });
@@ -161,10 +149,7 @@ describe('deleteList', () => {
     // Mock the requests needed by this test.
     vi.mocked(fetch).mockImplementation((url, options = {}) => {
       // Return the existing School list.
-      if (
-        url === 'http://localhost:8000/lists' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -199,9 +184,7 @@ describe('deleteList', () => {
       }
 
       // Reject any unexpected requests.
-      return Promise.reject(
-        new Error(`Unexpected fetch URL: ${url}`),
-      );
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
     });
 
     // Render the application.
@@ -211,14 +194,14 @@ describe('deleteList', () => {
     expect(
       await screen.findByRole('heading', {
         name: 'School',
-      }),
+      })
     ).toBeInTheDocument();
 
     // Open the delete confirmation dialog.
     await user.click(
       screen.getByRole('button', {
         name: 'Delete List',
-      }),
+      })
     );
 
     // Wait for the confirmation dialog.
@@ -228,45 +211,36 @@ describe('deleteList', () => {
     await user.click(
       screen.getByRole('button', {
         name: 'Permanently Delete',
-      }),
+      })
     );
 
     // Verify the School list disappears.
     expect(
       screen.queryByRole('heading', {
         name: 'School',
-      }),
+      })
     ).not.toBeInTheDocument();
 
     // Verify the empty-state message appears.
     expect(
-      await screen.findByText(
-        'You currently have no task lists',
-      ),
+      await screen.findByText('You currently have no task lists')
     ).toBeInTheDocument();
 
     // Verify the DELETE request used the correct URL and method.
-    expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:8000/lists/list-123',
-      {
-        method: 'DELETE',
-      },
-    );
+    expect(fetch).toHaveBeenCalledWith('http://localhost:8000/lists/list-123', {
+      method: 'DELETE',
+    });
   });
 });
 
-
-  //Creates a task
+//Creates a task
 describe('createTask', () => {
   it('creates a new task successfully', async () => {
     const user = userEvent.setup();
 
     // Return the School list when the application loads its lists
     vi.mocked(fetch).mockImplementation((url, options = {}) => {
-      if (
-        url === 'http://localhost:8000/lists' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -281,10 +255,7 @@ describe('createTask', () => {
       }
 
       // Create a task
-      if (
-        url === 'http://localhost:8000/tasks' &&
-        options.method === 'POST'
-      ) {
+      if (url === 'http://localhost:8000/tasks' && options.method === 'POST') {
         const task = JSON.parse(options.body);
 
         return Promise.resolve({
@@ -316,9 +287,7 @@ describe('createTask', () => {
         });
       }
 
-      return Promise.reject(
-        new Error(`Unexpected fetch URL: ${url}`),
-      );
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
     });
 
     // Render the application
@@ -330,22 +299,17 @@ describe('createTask', () => {
     });
 
     // Enter the task name
-    await user.type(
-      screen.getByLabelText('Task'),
-      'Homework 1',
-    );
+    await user.type(screen.getByLabelText('Task'), 'Homework 1');
 
     // Click Add to submit the task
     await user.click(
       screen.getByRole('button', {
         name: 'Add',
-      }),
+      })
     );
 
     // Verify the task appears on the page
-    expect(
-      await screen.findByText('Homework 1'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Homework 1')).toBeInTheDocument();
 
     // Verify the task was sent to the backend
     expect(fetch).toHaveBeenCalledWith(
@@ -359,11 +323,10 @@ describe('createTask', () => {
           name: 'Homework 1',
           listId: 'list-123',
         }),
-      }),
+      })
     );
   });
 });
-
 
 // Archives a task
 describe('archiveTask', () => {
@@ -372,25 +335,16 @@ describe('archiveTask', () => {
 
     vi.mocked(fetch).mockImplementation((url, options = {}) => {
       // Return the School list
-      if (
-        url === 'http://localhost:8000/lists' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () =>
-            Promise.resolve([
-              { _id: 'list-123', name: 'School' },
-            ]),
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
         });
       }
 
       // Return Homework 1 as an existing task
-      if (
-        url === 'http://localhost:8000/tasks' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -423,35 +377,28 @@ describe('archiveTask', () => {
         });
       }
 
-      return Promise.reject(
-        new Error(`Unexpected fetch URL: ${url}`),
-      );
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
     });
 
     render(<MyApp />);
 
     // Verify the task exists before archiving itit
-    expect(
-      await screen.findByText('Homework 1'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Homework 1')).toBeInTheDocument();
 
     // Click Archive
-    await user.click(
-      screen.getByRole('button', { name: 'Archive' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Archive task' }));
 
     // Confirm the task disappears from the active task list
-expect(
-  screen.getByText('Get started by adding a task'),
-).toBeInTheDocument();
+    expect(
+      screen.getByText('Get started by adding a task')
+    ).toBeInTheDocument();
 
-// Confirm the task appears in the Deleted Tasks section
-const archivedSection = screen.getByText('Archived Tasks')
-  .closest('details');
+    // Confirm the task appears in the Deleted Tasks section
+    const archivedSection = screen
+      .getByText('Archived Tasks')
+      .closest('details');
 
-expect(archivedSection).toContainElement(
-  screen.getByText('Homework 1'),
-);
+    expect(archivedSection).toContainElement(screen.getByText('Homework 1'));
 
     // Verify the backend request
     expect(fetch).toHaveBeenCalledWith(
@@ -462,7 +409,7 @@ expect(archivedSection).toContainElement(
           'Content-type': 'application/json',
         },
         body: JSON.stringify({ archived: true }),
-      },
+      }
     );
   });
 });
@@ -474,25 +421,16 @@ describe('deleteTask', () => {
 
     vi.mocked(fetch).mockImplementation((url, options = {}) => {
       // Return the School list
-      if (
-        url === 'http://localhost:8000/lists' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () =>
-            Promise.resolve([
-              { _id: 'list-123', name: 'School' },
-            ]),
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
         });
       }
 
       // Return Homework 1 as an existing task
-      if (
-        url === 'http://localhost:8000/tasks' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -525,35 +463,26 @@ describe('deleteTask', () => {
         });
       }
 
-      return Promise.reject(
-        new Error(`Unexpected fetch URL: ${url}`),
-      );
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
     });
 
     render(<MyApp />);
 
     // Verify the task exists before deleting it
-    expect(
-      await screen.findByText('Homework 1'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Homework 1')).toBeInTheDocument();
 
     // Click Delete
-    await user.click(
-      screen.getByRole('button', { name: 'Delete' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Delete task' }));
 
     // Confirm the task disappears from the active task list
-expect(
-  screen.getByText('Get started by adding a task'),
-).toBeInTheDocument();
+    expect(
+      screen.getByText('Get started by adding a task')
+    ).toBeInTheDocument();
 
-// Confirm the task appears in the Deleted Tasks section
-const deletedSection = screen.getByText('Deleted Tasks')
-  .closest('details');
+    // Confirm the task appears in the Deleted Tasks section
+    const deletedSection = screen.getByText('Deleted Tasks').closest('details');
 
-expect(deletedSection).toContainElement(
-  screen.getByText('Homework 1'),
-);
+    expect(deletedSection).toContainElement(screen.getByText('Homework 1'));
 
     // Verify the backend request
     expect(fetch).toHaveBeenCalledWith(
@@ -564,7 +493,7 @@ expect(deletedSection).toContainElement(
           'Content-type': 'application/json',
         },
         body: JSON.stringify({ deleted: true }),
-      },
+      }
     );
   });
 });
@@ -576,25 +505,16 @@ describe('undoDeleteTask', () => {
 
     vi.mocked(fetch).mockImplementation((url, options = {}) => {
       // Return the School list
-      if (
-        url === 'http://localhost:8000/lists' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () =>
-            Promise.resolve([
-              { _id: 'list-123', name: 'School' },
-            ]),
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
         });
       }
 
       // Return Homework 1 as an already-deleted task
-      if (
-        url === 'http://localhost:8000/tasks' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -612,27 +532,25 @@ describe('undoDeleteTask', () => {
 
       // Successfully restore the task
       if (
-  url === 'http://localhost:8000/tasks/task-123/restore-deleted' &&
-  options.method === 'PUT'
-) {
-  const body = JSON.parse(options.body);
+        url === 'http://localhost:8000/tasks/task-123/restore-deleted' &&
+        options.method === 'PUT'
+      ) {
+        const body = JSON.parse(options.body);
 
-  return Promise.resolve({
-    ok: true,
-    status: 200,
-    json: () =>
-      Promise.resolve({
-        _id: 'task-123',
-        name: 'Homework 1',
-        listId: 'list-123',
-        deleted: body.deleted,
-      }),
-  });
-}
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              _id: 'task-123',
+              name: 'Homework 1',
+              listId: 'list-123',
+              deleted: body.deleted,
+            }),
+        });
+      }
 
-      return Promise.reject(
-        new Error(`Unexpected fetch URL: ${url}`),
-      );
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
     });
 
     render(<MyApp />);
@@ -643,35 +561,35 @@ describe('undoDeleteTask', () => {
     const deletedSection = deletedHeading.closest('details');
 
     expect(deletedSection).toContainElement(
-      await within(deletedSection).findByText('Homework 1'),
+      await within(deletedSection).findByText('Homework 1')
     );
 
     // Click Restore
     await user.click(
       within(deletedSection).getByRole('button', {
         name: 'Restore',
-      }),
+      })
     );
 
-   // Verify the task returns to the active task list
-await waitFor(() => {
-  expect(
-    within(deletedSection).queryByText('Homework 1'),
-  ).not.toBeInTheDocument();
-});
+    // Verify the task returns to the active task list
+    await waitFor(() => {
+      expect(
+        within(deletedSection).queryByText('Homework 1')
+      ).not.toBeInTheDocument();
+    });
 
-expect(screen.getByText('Homework 1')).toBeInTheDocument();
+    expect(screen.getByText('Homework 1')).toBeInTheDocument();
     // Verify the restore request
     expect(fetch).toHaveBeenCalledWith(
-  'http://localhost:8000/tasks/task-123/restore-deleted',
-  {
-    method: 'PUT',
-    headers: {
-      'Content-type': 'application/json',
-    },
-    body: JSON.stringify({ deleted: false }),
-  },
-);
+      'http://localhost:8000/tasks/task-123/restore-deleted',
+      {
+        method: 'PUT',
+        headers: {
+          'Content-type': 'application/json',
+        },
+        body: JSON.stringify({ deleted: false }),
+      }
+    );
   });
 });
 
@@ -682,25 +600,16 @@ describe('undoArchiveTask', () => {
 
     vi.mocked(fetch).mockImplementation((url, options = {}) => {
       // Return the School list
-      if (
-        url === 'http://localhost:8000/lists' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () =>
-            Promise.resolve([
-              { _id: 'list-123', name: 'School' },
-            ]),
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
         });
       }
 
       // Return Homework 1 as an already-deleted task
-      if (
-        url === 'http://localhost:8000/tasks' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -718,27 +627,25 @@ describe('undoArchiveTask', () => {
 
       // Successfully restore the task
       if (
-  url === 'http://localhost:8000/tasks/task-123/restore-archived' &&
-  options.method === 'PUT'
-) {
-  const body = JSON.parse(options.body);
+        url === 'http://localhost:8000/tasks/task-123/restore-archived' &&
+        options.method === 'PUT'
+      ) {
+        const body = JSON.parse(options.body);
 
-  return Promise.resolve({
-    ok: true,
-    status: 200,
-    json: () =>
-      Promise.resolve({
-        _id: 'task-123',
-        name: 'Homework 1',
-        listId: 'list-123',
-        archived: body.archived,
-      }),
-  });
-}
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              _id: 'task-123',
+              name: 'Homework 1',
+              listId: 'list-123',
+              archived: body.archived,
+            }),
+        });
+      }
 
-      return Promise.reject(
-        new Error(`Unexpected fetch URL: ${url}`),
-      );
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
     });
 
     render(<MyApp />);
@@ -749,35 +656,35 @@ describe('undoArchiveTask', () => {
     const archivedSection = archivedHeading.closest('details');
 
     expect(archivedSection).toContainElement(
-      await within(archivedSection).findByText('Homework 1'),
+      await within(archivedSection).findByText('Homework 1')
     );
 
     // Click Restore
     await user.click(
       within(archivedSection).getByRole('button', {
         name: 'Restore',
-      }),
+      })
     );
 
-   // Verify the task returns to the active task list
-await waitFor(() => {
-  expect(
-    within(archivedSection).queryByText('Homework 1'),
-  ).not.toBeInTheDocument();
-});
+    // Verify the task returns to the active task list
+    await waitFor(() => {
+      expect(
+        within(archivedSection).queryByText('Homework 1')
+      ).not.toBeInTheDocument();
+    });
 
-expect(screen.getByText('Homework 1')).toBeInTheDocument();
+    expect(screen.getByText('Homework 1')).toBeInTheDocument();
     // Verify the restore request
     expect(fetch).toHaveBeenCalledWith(
-  'http://localhost:8000/tasks/task-123/restore-archived',
-  {
-    method: 'PUT',
-    headers: {
-      'Content-type': 'application/json',
-    },
-    body: JSON.stringify({ archived: false }),
-  },
-);
+      'http://localhost:8000/tasks/task-123/restore-archived',
+      {
+        method: 'PUT',
+        headers: {
+          'Content-type': 'application/json',
+        },
+        body: JSON.stringify({ archived: false }),
+      }
+    );
   });
 });
 
@@ -788,25 +695,16 @@ describe('permanentlyDeleteTask', () => {
 
     vi.mocked(fetch).mockImplementation((url, options = {}) => {
       // Return the School list
-      if (
-        url === 'http://localhost:8000/lists' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () =>
-            Promise.resolve([
-              { _id: 'list-123', name: 'School' },
-            ]),
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
         });
       }
 
       // Return Homework 1 as an already-deleted task
-      if (
-        url === 'http://localhost:8000/tasks' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -833,9 +731,7 @@ describe('permanentlyDeleteTask', () => {
         });
       }
 
-      return Promise.reject(
-        new Error(`Unexpected fetch URL: ${url}`),
-      );
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
     });
 
     render(<MyApp />);
@@ -845,14 +741,14 @@ describe('permanentlyDeleteTask', () => {
     const deletedSection = deletedHeading.closest('details');
 
     expect(deletedSection).toContainElement(
-      await within(deletedSection).findByText('Homework 1'),
+      await within(deletedSection).findByText('Homework 1')
     );
 
     // Permanently delete the task
     await user.click(
       within(deletedSection).getByRole('button', {
         name: 'Permanently Delete',
-      }),
+      })
     );
 
     // Verify the task disappears entirely
@@ -861,15 +757,11 @@ describe('permanentlyDeleteTask', () => {
     });
 
     // Verify the DELETE request
-    expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:8000/tasks/task-123',
-      {
-        method: 'DELETE',
-      },
-    );
+    expect(fetch).toHaveBeenCalledWith('http://localhost:8000/tasks/task-123', {
+      method: 'DELETE',
+    });
   });
 });
-
 
 // Moves an archived task to Deleted Tasks
 describe('deleteArchivedTask', () => {
@@ -878,25 +770,16 @@ describe('deleteArchivedTask', () => {
 
     vi.mocked(fetch).mockImplementation((url, options = {}) => {
       // Return the School list
-      if (
-        url === 'http://localhost:8000/lists' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () =>
-            Promise.resolve([
-              { _id: 'list-123', name: 'School' },
-            ]),
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
         });
       }
 
       // Return Homework 1 as an archived task
-      if (
-        url === 'http://localhost:8000/tasks' &&
-        !options.method
-      ) {
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -913,29 +796,27 @@ describe('deleteArchivedTask', () => {
       }
 
       // Successfully move the task to Deleted Tasks
-     if (
-  url === 'http://localhost:8000/tasks/task-123/delete' &&
-  options.method === 'PUT'
-) {
-  const body = JSON.parse(options.body);
+      if (
+        url === 'http://localhost:8000/tasks/task-123/delete' &&
+        options.method === 'PUT'
+      ) {
+        const body = JSON.parse(options.body);
 
-  return Promise.resolve({
-    ok: true,
-    status: 200,
-    json: () =>
-      Promise.resolve({
-        _id: 'task-123',
-        name: 'Homework 1',
-        listId: 'list-123',
-        archived: false,
-        deleted: body.deleted,
-      }),
-  });
-}
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              _id: 'task-123',
+              name: 'Homework 1',
+              listId: 'list-123',
+              archived: false,
+              deleted: body.deleted,
+            }),
+        });
+      }
 
-      return Promise.reject(
-        new Error(`Unexpected fetch URL: ${url}`),
-      );
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
     });
 
     render(<MyApp />);
@@ -945,20 +826,20 @@ describe('deleteArchivedTask', () => {
     const archivedSection = archivedHeading.closest('details');
 
     expect(archivedSection).toContainElement(
-      await within(archivedSection).findByText('Homework 1'),
+      await within(archivedSection).findByText('Homework 1')
     );
 
     // Click the button that deletes the archived task
     await user.click(
       within(archivedSection).getByRole('button', {
         name: /delete/i,
-      }),
+      })
     );
 
     // Verify the task leaves Archived Tasks
     await waitFor(() => {
       expect(
-        within(archivedSection).queryByText('Homework 1'),
+        within(archivedSection).queryByText('Homework 1')
       ).not.toBeInTheDocument();
     });
 
@@ -967,7 +848,7 @@ describe('deleteArchivedTask', () => {
     const deletedSection = deletedHeading.closest('details');
 
     expect(deletedSection).toContainElement(
-      within(deletedSection).getByText('Homework 1'),
+      within(deletedSection).getByText('Homework 1')
     );
   });
 });
@@ -975,97 +856,93 @@ describe('deleteArchivedTask', () => {
 //Edits a task
 describe('editTask', () => {
   it('updates an existing task successfully', async () => {
-  const user = userEvent.setup();
+    const user = userEvent.setup();
 
-  vi.mocked(fetch).mockImplementation((url, options = {}) => {
-    if (url === 'http://localhost:8000/lists' && !options.method) {
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve([
-          { _id: 'list-123', name: 'School' },
-        ]),
-      });
-    }
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
+        });
+      }
 
-    if (url === 'http://localhost:8000/tasks' && !options.method) {
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve([
-          {
-            _id: 'task-123',
-            name: 'Homework 1',
-            listId: 'list-123',
-            archived: false,
-            deleted: false,
-          },
-        ]),
-      });
-    }
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Homework 1',
+                listId: 'list-123',
+                archived: false,
+                deleted: false,
+              },
+            ]),
+        });
+      }
 
-    if (
-      url === 'http://localhost:8000/tasks/task-123' &&
-      options.method === 'PUT'
-    ) {
-      const body = JSON.parse(options.body);
+      if (
+        url === 'http://localhost:8000/tasks/task-123' &&
+        options.method === 'PUT'
+      ) {
+        const body = JSON.parse(options.body);
 
-      return Promise.resolve({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({
-          _id: 'task-123',
-          name: body.name,
-          listId: 'list-123',
-          archived: false,
-          deleted: false,
-        }),
-      });
-    }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              _id: 'task-123',
+              name: body.name,
+              listId: 'list-123',
+              archived: false,
+              deleted: false,
+            }),
+        });
+      }
 
-    return Promise.reject(
-      new Error(`Unexpected fetch URL: ${url}`)
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+
+    // Wait for the original task to appear.
+    expect(await screen.findByText('Homework 1')).toBeInTheDocument();
+
+    // Wait for the original task to appear.
+    const taskName = await screen.findByText('Homework 1');
+    expect(taskName).toBeInTheDocument();
+
+    // Click the task name to edit it.
+    await user.click(taskName);
+
+    // Find the input containing the existing task name.
+    const editInput = screen.getByDisplayValue('Homework 1');
+
+    // Replace the name with the updated name.
+    await user.clear(editInput);
+    await user.type(editInput, 'Updated Homework');
+
+    // Click outside the input to save the change.
+    await user.click(document.body);
+
+    // Verify the updated name appears.
+    expect(await screen.findByText('Updated Homework')).toBeInTheDocument();
+
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-123',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ name: 'Updated Homework' }),
+      })
     );
   });
-
-  render(<MyApp />);
-
-  // Wait for the original task to appear.
-  expect(await screen.findByText('Homework 1')).toBeInTheDocument();
-
-  // Wait for the original task to appear.
-const taskName = await screen.findByText('Homework 1');
-expect(taskName).toBeInTheDocument();
-
-// Click the task name to edit it.
-await user.click(taskName);
-
-// Find the input containing the existing task name.
-const editInput = screen.getByDisplayValue('Homework 1');
-
-// Replace the name with the updated name.
-await user.clear(editInput);
-await user.type(editInput, 'Updated Homework');
-
-// Click outside the input to save the change.
-await user.click(document.body);
-
-// Verify the updated name appears.
-expect(
-  await screen.findByText('Updated Homework')
-).toBeInTheDocument();
-
-expect(fetch).toHaveBeenCalledWith(
-  'http://localhost:8000/tasks/task-123',
-  expect.objectContaining({
-    method: 'PUT',
-    body: JSON.stringify({ name: 'Updated Homework' }),
-  })
-);
-});
 });
 
-//Tests list switching 
+//Tests list switching
 describe('switch lists', () => {
   it('displays the tasks for the selected list', async () => {
     const user = userEvent.setup();
@@ -1075,10 +952,11 @@ describe('switch lists', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () => Promise.resolve([
-            { _id: 'list-123', name: 'School' },
-            { _id: 'list-456', name: 'Work' },
-          ]),
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'School' },
+              { _id: 'list-456', name: 'Work' },
+            ]),
         });
       }
 
@@ -1086,28 +964,27 @@ describe('switch lists', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () => Promise.resolve([
-            {
-              _id: 'task-123',
-              name: 'Homework 1',
-              listId: 'list-123',
-              archived: false,
-              deleted: false,
-            },
-            {
-              _id: 'task-456',
-              name: 'Finish report',
-              listId: 'list-456',
-              archived: false,
-              deleted: false,
-            },
-          ]),
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Homework 1',
+                listId: 'list-123',
+                archived: false,
+                deleted: false,
+              },
+              {
+                _id: 'task-456',
+                name: 'Finish report',
+                listId: 'list-456',
+                archived: false,
+                deleted: false,
+              },
+            ]),
         });
       }
 
-      return Promise.reject(
-        new Error(`Unexpected fetch URL: ${url}`)
-      );
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
     });
 
     render(<MyApp />);
@@ -1161,9 +1038,7 @@ describe('DeleteList', () => {
       listId: 'list-2',
     };
 
-    const lists = [
-      { _id: 'list-2', name: 'Work' },
-    ];
+    const lists = [{ _id: 'list-2', name: 'Work' }];
 
     render(
       <DeleteList
@@ -1206,9 +1081,7 @@ describe('ArchiveList', () => {
       listId: 'list-1',
     };
 
-    const lists = [
-      { _id: 'list-1', name: 'School' },
-    ];
+    const lists = [{ _id: 'list-1', name: 'School' }];
 
     render(
       <ArchiveList
