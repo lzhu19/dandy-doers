@@ -3,6 +3,8 @@ import Table from './Table';
 import Form from './Form';
 import './ToDoList.css';
 import ArchiveList from './ArchiveList';
+import DeleteList from './DeleteList';
+import ListSection from './ListSection';
 import SearchBar from './SearchBar';
 
 function MyApp() {
@@ -371,28 +373,187 @@ function MyApp() {
   );
 
   return (
-    <div className="container">
-      <SearchBar 
-      removeTask={removeOneTask}
-      taskData={tasks}
-      archiveTask={archiveTask}
-      />
-      <Table
-        taskData={tasks}
-        removeTask={removeOneTask}
-        updateTask={updateOneTask}
-        archiveTask={archiveTask}
-        editingId={editingId}
-        setEditingId={setEditingId}
-      />
-      <Form handleSubmit={updateList} />
-      <ArchiveList
-        lists={lists}
-        archivedTasks={archivedTasks}
-        restoreArchivedTask={restoreArchivedTask}
-        removeTask={removeOneTask}
-      />
-    </div>
+  <>
+      <div className="main-layout">
+        <aside className="sidebar">
+          <div className="profile-icon" aria-hidden="true" />
+
+          <div>
+            <h2 className="sidebar-section-title">Upcoming</h2>
+            <div className="upcoming-box">
+              <p className="upcoming-empty-text">No upcoming tasks</p>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="sidebar-section-title">Lists</h2>
+            <ListSection
+              lists={lists}
+              selectedListId={currentList?._id}
+              onSelectList={setSelectedListId}
+            />
+            <button
+              className="add-list-button"
+              type="button"
+              onClick={openCreateListDialog}
+            >
+              + Add List
+            </button>
+          </div>
+        </aside>
+
+        <main className="main-content">
+          <SearchBar
+          removeTask={deleteTask}
+          taskData={tasks}
+          archiveTask={archiveTask}
+          />
+          {lists.length === 0 ? (
+            <section className="empty-list-state">
+              <p>You currently have no task lists</p>
+              <button type="button" onClick={openCreateListDialog}>
+                Create List
+              </button>
+            </section>
+          ) : (
+            <>
+              <div className="main-header-row">
+                <h1 className="main-header-title">{currentList.name}</h1>
+                <button
+                  className="delete-list-button"
+                  type="button"
+                  onClick={() => {
+                    setListDeleteError('');
+                    setIsDeleteListOpen(true);
+                  }}
+                >
+                  Delete List
+                </button>
+              </div>
+              <hr className="header-underline" />
+
+              <div className="task-panel">
+                {currentTasks.length === 0 ? (
+                  <p className="task-panel-empty-text">
+                    Get started by adding a task
+                  </p>
+                ) : (
+                  <Table
+                    taskData={currentTasks}
+                    removeTask={deleteTask}
+                    updateTask={updateOneTask}
+                    archiveTask={archiveTask}
+                    editingId={editingId}
+                    setEditingId={setEditingId}
+                  />
+                )}
+                <Form handleSubmit={updateList} />
+              </div>
+
+              <ArchiveList
+                archivedTasks={archivedTasks}
+                lists={lists}
+                restoreArchivedTask={restoreArchivedTask}
+                deleteTask={deleteTask}
+              />
+              <DeleteList
+                deletedTasks={deletedTasks}
+                lists={lists}
+                restoreDeletedTask={restoreDeletedTask}
+                permanentlyDeleteTask={removeOneTask}
+              />
+            </>
+          )}
+        </main>
+      </div>
+
+      {isCreateListOpen && (
+        <div className="list-dialog-backdrop">
+          <section
+            className="list-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-list-title"
+          >
+            <h2 id="create-list-title">Create a list</h2>
+            <form onSubmit={createList}>
+              <label htmlFor="new-list-name">List name</label>
+              <input
+                autoFocus
+                id="new-list-name"
+                name="name"
+                type="text"
+                value={newListName}
+                onChange={(event) => setNewListName(event.target.value)}
+              />
+              {listCreateError && (
+                <p className="list-create-error" role="alert">
+                  {listCreateError}
+                </p>
+              )}
+              <div className="list-dialog-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreateListOpen(false);
+                    setNewListName('');
+                    setListCreateError('');
+                  }}
+                  disabled={isCreatingList}
+                >
+                  Cancel
+                </button>
+                <button type="submit" disabled={isCreatingList}>
+                  {isCreatingList ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+      {isDeleteListOpen && currentList && (
+        <div className="list-dialog-backdrop">
+          <section
+            className="list-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-list-title"
+          >
+            <h2 id="delete-list-title">Permanently delete list?</h2>
+            <p>
+              “{currentList.name}” and all its tasks will be permanently
+              deleted, including archived and deleted tasks. This action cannot
+              be undone.
+            </p>
+            {listDeleteError && (
+              <p className="list-create-error" role="alert">
+                {listDeleteError}
+              </p>
+            )}
+            <div className="list-dialog-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteListOpen(false);
+                  setListDeleteError('');
+                }}
+                disabled={isDeletingList}
+              >
+                Cancel
+              </button>
+              <button
+                className="confirm-delete-list-button"
+                type="button"
+                onClick={deleteCurrentList}
+                disabled={isDeletingList}
+              >
+                {isDeletingList ? 'Deleting...' : 'Permanently Delete'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+  </>
   );
 }
 
