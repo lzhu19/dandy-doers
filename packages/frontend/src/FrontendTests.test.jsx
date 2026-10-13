@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import {
   beforeEach,
-  afterEach,
   beforeAll,
   afterAll,
   describe,
@@ -76,8 +75,6 @@ beforeAll(() => {
       if (url === 'http://localhost:8000/lists/list-123') {
         //delete an existing list
         if (options.method === 'DELETE') {
-          const list = JSON.parse(options.body);
-
           return Promise.resolve({
             ok: true,
             status: 204,

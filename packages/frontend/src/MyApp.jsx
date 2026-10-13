@@ -5,6 +5,7 @@ import './ToDoList.css';
 import ArchiveList from './ArchiveList';
 import DeleteList from './DeleteList';
 import ListSection from './ListSection';
+import SearchBar from './SearchBar';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
@@ -428,6 +429,12 @@ function MyApp() {
               <hr className="header-underline" />
 
               <div className="task-panel">
+                <SearchBar
+                  lists={lists}
+                  removeTask={deleteTask}
+                  taskData={currentTasks}
+                  archiveTask={archiveTask}
+                />
                 {currentTasks.length === 0 ? (
                   <p className="task-panel-empty-text">
                     Get started by adding a task
