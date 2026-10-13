@@ -2,7 +2,7 @@
 
 function SearchBar(props) {
   function searchTask() {
-    var input, filter, ul, li, a, i, txtValue;
+    var input, filter, ul, li, i, txtValue;
     input = document.getElementById('myInput');
     filter = input.value.toUpperCase();
     ul = document.getElementById('myTasks');
