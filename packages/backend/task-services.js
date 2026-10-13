@@ -1,19 +1,10 @@
-import mongoose from 'mongoose';
 import taskModel from './task.js';
-import 'dotenv/config';
-
-mongoose.set('debug', true);
-
-mongoose.connect(process.env.MONGODB_URI).catch((error) => console.log(error));
 
 function getTasks(name) {
   let promise;
-  if (name === undefined) {
-    // /tasks
+  if (!name) {
     promise = taskModel.find();
-  } else if (name) {
-    //&& !job
-    // /tasks?name=<name>
+  } else {
     promise = findTaskByName(name);
   }
   return promise;
@@ -24,21 +15,16 @@ function findTaskById(id) {
   return taskModel.findById(id);
 }
 
-function addTask(task) {
-  // /tasks
-  const taskToAdd = new taskModel(task);
-  const promise = taskToAdd.save();
-  return promise;
-}
-
 function findTaskByName(name) {
   // /tasks?name=<name>
   return taskModel.find({ name: name });
 }
 
-function deleteTask(id) {
-  // /tasks/<id>
-  return taskModel.findByIdAndDelete(id);
+function addTask(task) {
+  // /tasks
+  const taskToAdd = new taskModel(task);
+  const promise = taskToAdd.save();
+  return promise;
 }
 
 //finds a task by id & updates its name, then saves the change
@@ -58,6 +44,22 @@ function archiveTask(id) {
   });
 }
 
+function deleteTask(id) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.deleted = true;
+    return task.save();
+  });
+}
+
+function permanentlyDeleteTask(id) {
+  return taskModel.findOneAndDelete({ _id: id, deleted: true });
+}
+
+function getArchivedTasks() {
+  return taskModel.find({ archived: true });
+}
+
 function restoreArchivedTask(id) {
   return taskModel.findById(id).then((task) => {
     if (!task) return null;
@@ -66,17 +68,29 @@ function restoreArchivedTask(id) {
   });
 }
 
-function getArchivedTasks(id) {
-  return taskModel.find({ archived: true });
+function restoreDeletedTask(id) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.deleted = false;
+    return task.save();
+  });
+}
+
+function getDeletedTasks() {
+  return taskModel.find({ deleted: true });
 }
 
 export {
-  addTask,
-  deleteTask,
-  findTaskById,
   getTasks,
+  findTaskById,
+  findTaskByName,
+  addTask,
   updateTask,
+  deleteTask,
+  permanentlyDeleteTask,
   archiveTask,
-  restoreArchivedTask,
   getArchivedTasks,
+  restoreArchivedTask,
+  restoreDeletedTask,
+  getDeletedTasks,
 };

@@ -53,6 +53,7 @@ function Table(props) {
         taskData={props.taskData}
         removeTask={props.removeTask}
         archiveTask={props.archiveTask}
+        //deleteTask={props.deleteTask}
         updateTask={props.updateTask}
         editingId={props.editingId}
         setEditingId={props.setEditingId}

@@ -1,19 +1,111 @@
 import { useState, useEffect } from 'react';
 import Table from './Table';
 import Form from './Form';
+import './ToDoList.css';
 import ArchiveList from './ArchiveList';
-import SearchBar from './SearchBar';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
+  const [lists, setLists] = useState([]);
+  const [selectedListId, setSelectedListId] = useState(null);
+  const [isCreateListOpen, setIsCreateListOpen] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const [listCreateError, setListCreateError] = useState('');
+  const [isCreatingList, setIsCreatingList] = useState(false);
+  const [isDeleteListOpen, setIsDeleteListOpen] = useState(false);
+  const [listDeleteError, setListDeleteError] = useState('');
+  const [isDeletingList, setIsDeletingList] = useState(false);
   //starts as null, when user clicks set EditingId to the task's id
   const [editingId, setEditingId] = useState(null);
 
   const [archivedTasks, setArchivedTasks] = useState([]);
 
+  const [deletedTasks, setDeletedTasks] = useState([]);
+
   function fetchTasks() {
     const promise = fetch('http://localhost:8000/tasks');
     return promise;
+  }
+
+  function fetchLists() {
+    return fetch('http://localhost:8000/lists');
+  }
+
+  async function createList(event) {
+    event.preventDefault();
+    const name = newListName.trim();
+    if (!name) {
+      setListCreateError('Enter a list name.');
+      return;
+    }
+
+    setIsCreatingList(true);
+    setListCreateError('');
+    try {
+      const response = await fetch('http://localhost:8000/lists', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name }),
+      });
+      if (response.status !== 201) {
+        throw new Error(`Unable to create list (${response.status}).`);
+      }
+
+      const createdList = await response.json();
+      setLists((currentLists) => [...currentLists, createdList]);
+      setSelectedListId(createdList._id);
+      setNewListName('');
+      setIsCreateListOpen(false);
+    } catch (error) {
+      setListCreateError(error.message);
+    } finally {
+      setIsCreatingList(false);
+    }
+  }
+
+  function openCreateListDialog() {
+    setListCreateError('');
+    setIsCreateListOpen(true);
+  }
+
+  async function deleteCurrentList() {
+    if (!currentList) return;
+
+    setIsDeletingList(true);
+    setListDeleteError('');
+    try {
+      const response = await fetch(
+        `http://localhost:8000/lists/${currentList._id}`,
+        { method: 'DELETE' }
+      );
+      if (response.status !== 204) {
+        throw new Error(`Unable to delete list (${response.status}).`);
+      }
+
+      const deletedListId = currentList._id;
+      const remainingLists = lists.filter((list) => list._id !== deletedListId);
+      const removeListTasks = (currentTasks) =>
+        currentTasks.filter(
+          (task) => String(task.listId) !== String(deletedListId)
+        );
+
+      setLists(remainingLists);
+      setTasks(removeListTasks);
+      setArchivedTasks(removeListTasks);
+      setDeletedTasks(removeListTasks);
+      setSelectedListId((currentId) =>
+        currentId === deletedListId
+          ? (remainingLists[0]?._id ?? null)
+          : currentId
+      );
+      setIsDeleteListOpen(false);
+    } catch (error) {
+      setListDeleteError(error.message);
+    } finally {
+      setIsDeletingList(false);
+    }
   }
 
   function postTask(job) {
@@ -22,7 +114,7 @@ function MyApp() {
       headers: {
         'Content-type': 'application/json',
       },
-      body: JSON.stringify(job),
+      body: JSON.stringify({ ...job, listId: selectedListId }),
     });
     return promise;
   }
@@ -50,6 +142,41 @@ function MyApp() {
             archivedTask,
           ]);
           setTasks((currentTasks) =>
+            currentTasks.filter((task) => task._id !== id)
+          );
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
+  function deleteTask(id) {
+    // deletes a task with the given id
+    console.log('Delete clicked:', id); // for debugging purposes, remove later
+    const promise = fetch(`http://localhost:8000/tasks/${id}/delete`, {
+      method: 'PUT',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({ deleted: true }),
+    });
+
+    promise
+      .then((response) => {
+        if (response.status === 200) return response.json();
+        return null;
+      })
+      .then((deletedTask) => {
+        if (deletedTask !== null) {
+          setDeletedTasks((currentDeletedTasks) => [
+            ...currentDeletedTasks,
+            deletedTask,
+          ]);
+          setTasks((currentTasks) =>
+            currentTasks.filter((task) => task._id !== id)
+          );
+          setArchivedTasks((currentTasks) =>
             currentTasks.filter((task) => task._id !== id)
           );
         }
@@ -91,6 +218,35 @@ function MyApp() {
       });
   }
 
+  function restoreDeletedTask(id) {
+    // restores an deleted task with the given id
+    console.log('Restore deleted clicked:', id); // for debugging purposes, remove later
+    const promise = fetch(`http://localhost:8000/tasks/${id}/restore-deleted`, {
+      method: 'PUT',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify({ deleted: false }),
+    });
+
+    promise
+      .then((response) => {
+        if (response.status === 200) return response.json();
+        return null;
+      })
+      .then((restoredTask) => {
+        if (restoredTask !== null) {
+          setTasks((currentTasks) => [...currentTasks, restoredTask]);
+          setDeletedTasks((currentDeletedTasks) =>
+            currentDeletedTasks.filter((task) => task._id !== id)
+          );
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
   function removeOneTask(id) {
     // removes a task with the given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
@@ -104,6 +260,9 @@ function MyApp() {
             currentTasks.filter((task) => task._id !== id)
           );
           setArchivedTasks((currentTasks) =>
+            currentTasks.filter((task) => task._id !== id)
+          );
+          setDeletedTasks((currentTasks) =>
             currentTasks.filter((task) => task._id !== id)
           );
         }
@@ -171,21 +330,47 @@ function MyApp() {
     fetchTasks()
       .then((res) => res.json()) // convert response to json
       .then((tasks) => {
-        setTasks(tasks.filter((task) => task.archived !== true));
-        setArchivedTasks(tasks.filter((task) => task.archived === true));
+        setTasks(
+          tasks.filter(
+            (task) => task.archived !== true && task.deleted !== true
+          )
+        );
+        setArchivedTasks(
+          tasks.filter(
+            (task) => task.archived === true && task.deleted !== true
+          )
+        );
+        setDeletedTasks(tasks.filter((task) => task.deleted === true));
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+    fetchLists()
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Unable to retrieve lists: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((fetchedLists) => {
+        setLists(fetchedLists);
+        setSelectedListId(
+          (currentListId) => currentListId ?? fetchedLists[0]?._id ?? null
+        );
       })
       .catch((error) => {
         console.log(error);
       });
   }, []); // empty array here indicates that hook should be called only when component first mounts
 
+  const currentList =
+    lists.find((list) => list._id === selectedListId) ?? lists[0];
+  const currentTasks = tasks.filter(
+    (task) => String(task.listId) === String(currentList?._id)
+  );
+
   return (
     <div className="container">
-      <SearchBar
-        taskData={tasks}
-        removeTask={removeOneTask}
-        archiveTask={archiveTask}
-      />
       <Table
         taskData={tasks}
         removeTask={removeOneTask}
