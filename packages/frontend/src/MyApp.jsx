@@ -3,6 +3,7 @@ import Table from './Table';
 import Form from './Form';
 import './ToDoList.css';
 import ArchiveList from './ArchiveList';
+import SearchBar from './SearchBar';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
@@ -371,6 +372,11 @@ function MyApp() {
 
   return (
     <div className="container">
+      <SearchBar 
+      removeTask={removeOneTask}
+      taskData={tasks}
+      archiveTask={archiveTask}
+      />
       <Table
         taskData={tasks}
         removeTask={removeOneTask}
@@ -381,6 +387,7 @@ function MyApp() {
       />
       <Form handleSubmit={updateList} />
       <ArchiveList
+        lists={lists}
         archivedTasks={archivedTasks}
         restoreArchivedTask={restoreArchivedTask}
         removeTask={removeOneTask}
