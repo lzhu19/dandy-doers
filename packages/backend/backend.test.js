@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import mongoose from 'mongoose';
 import request from 'supertest';
+import { fileURLToPath } from 'node:url';
 
 jest.unstable_mockModule('./task-services.js', () => ({
   getTasks: jest.fn(),
@@ -104,6 +105,34 @@ describe('startServer', () => {
     expect(listen).not.toHaveBeenCalled();
     expect(process.exitCode).toBe(1);
   });
+
+  it('starts the server when run as the entry point', async () => {
+    jest.resetModules();
+    const { default: isolatedMongoose } = await import('mongoose');
+    const error = new Error('Database unavailable');
+    const connect = jest
+      .spyOn(isolatedMongoose, 'connect')
+      .mockRejectedValue(error);
+    const consoleError = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const originalArgv1 = process.argv[1];
+    process.argv[1] = fileURLToPath(new URL('./backend.js', import.meta.url));
+
+    try {
+      await import('./backend.js');
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(connect).toHaveBeenCalledWith(process.env.MONGODB_URI);
+      expect(consoleError).toHaveBeenCalledWith(
+        'Could not connect to MongoDB:',
+        error
+      );
+    } finally {
+      process.argv[1] = originalArgv1;
+      jest.resetModules();
+    }
+  });
 });
 
 describe('GET /', () => {
@@ -164,6 +193,15 @@ describe('POST /tasks', () => {
     ['invalid list ID', { name: 'Write tests', listId: 'not-an-object-id' }],
   ])('returns 400 for %s', async (_caseName, body) => {
     const response = await request(app).post('/tasks').send(body);
+
+    expect(response.status).toBe(400);
+    expect(response.text).toBe('Task name and a valid listId are required.');
+    expect(findListById).not.toHaveBeenCalled();
+    expect(addTask).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when the request has no body', async () => {
+    const response = await request(app).post('/tasks');
 
     expect(response.status).toBe(400);
     expect(response.text).toBe('Task name and a valid listId are required.');
@@ -559,6 +597,14 @@ describe('POST /lists', () => {
     ['a whitespace-only name', { name: '  ' }],
   ])('returns 400 for %s', async (_caseName, body) => {
     const response = await request(app).post('/lists').send(body);
+
+    expect(addList).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    expect(response.text).toBe('A non-empty list name is required.');
+  });
+
+  it('returns 400 when the request has no body', async () => {
+    const response = await request(app).post('/lists');
 
     expect(addList).not.toHaveBeenCalled();
     expect(response.status).toBe(400);
