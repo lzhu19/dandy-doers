@@ -34,10 +34,22 @@ function TableBody(props) {
         </td>
         <td>{row._id}</td>
         <td>
-          <button onClick={() => props.removeTask(row._id)}>Delete</button>
-        </td>
-        <td>
-          <button onClick={() => props.archiveTask(row._id)}>Archive</button>
+          <div className="task-actions">
+            <button
+              className="archive-icon-button"
+              aria-label="Archive task"
+              onClick={() => props.archiveTask(row._id)}
+            >
+              <ArchiveIcon />
+            </button>
+            <button
+              className="delete-icon-button"
+              aria-label="Delete task"
+              onClick={() => props.removeTask(row._id)}
+            >
+              <DeleteIcon />
+            </button>
+          </div>
         </td>
       </tr>
     );
@@ -59,6 +71,31 @@ function Table(props) {
         setEditingId={props.setEditingId}
       />
     </table>
+  );
+}
+
+function ArchiveIcon() {
+  return (
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M1.75 24.5C1.75 25.468 2.53203 26.25 3.5 26.25H24.5C25.468 26.25 26.25 25.468 26.25 24.5V8.75H1.75V24.5ZM10.5 12.9062C10.5 12.5453 10.7953 12.25 11.1562 12.25H16.8438C17.2047 12.25 17.5 12.5453 17.5 12.9062V13.3438C17.5 13.7047 17.2047 14 16.8438 14H11.1562C10.7953 14 10.5 13.7047 10.5 13.3438V12.9062ZM26.25 1.75H1.75C0.782031 1.75 0 2.53203 0 3.5V6.125C0 6.60625 0.39375 7 0.875 7H27.125C27.6063 7 28 6.60625 28 6.125V3.5C28 2.53203 27.218 1.75 26.25 1.75Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function DeleteIcon() {
+  return (
+    <svg viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M11.0832 17.9172L14.5015 14.5001M14.5015 14.5001L17.9187 11.0829M14.5015 14.5001L11.0832 11.0829M14.5015 14.5001L17.9187 17.9172M14.5003 26.5834C21.1739 26.5834 26.5837 21.1737 26.5837 14.5001C26.5837 7.82646 21.1739 2.41675 14.5003 2.41675C7.8267 2.41675 2.41699 7.82646 2.41699 14.5001C2.41699 21.1737 7.8267 26.5834 14.5003 26.5834Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 

@@ -383,7 +383,7 @@ describe('archiveTask', () => {
     expect(await screen.findByText('Homework 1')).toBeInTheDocument();
 
     // Click Archive
-    await user.click(screen.getByRole('button', { name: 'Archive' }));
+    await user.click(screen.getByRole('button', { name: 'Archive task' }));
 
     // Confirm the task disappears from the active task list
     expect(
@@ -469,7 +469,7 @@ describe('deleteTask', () => {
     expect(await screen.findByText('Homework 1')).toBeInTheDocument();
 
     // Click Delete
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Delete task' }));
 
     // Confirm the task disappears from the active task list
     expect(

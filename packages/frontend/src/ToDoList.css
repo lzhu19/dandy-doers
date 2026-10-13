@@ -73,12 +73,36 @@
   gap: 14px;
   border-radius: 10px;
   background: #9684a5;
-  color: #000;
+  color: #3a3042;
   font-size: 16px;
   letter-spacing: 0.25px;
   border: none;
   cursor: pointer;
   box-sizing: border-box;
+}
+
+.add-list-button:focus {
+  background: #9684a5;
+  color: #3a3042;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.add-list-button:hover {
+  background: #806e8e;
+  color: #3a3042;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.add-list-button:active {
+  background: #5b4f65;
+  color: #fffbf2;
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
 
 .main-content {
@@ -163,4 +187,163 @@
   cursor: pointer;
   align-self: flex-start;
   margin-top: auto;
+}
+
+.add-task-button,
+.add-task-button:focus {
+  background: #ffdf8c;
+  color: #3a3042;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.add-task-button:hover {
+  background: #c7ab64;
+  color: #3a3042;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.add-task-button:active {
+  background: #937b3c;
+  color: #fffbf2;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.archive-icon-button,
+.delete-icon-button,
+.archive-icon-button:hover,
+.delete-icon-button:hover,
+.archive-icon-button:focus,
+.delete-icon-button:focus,
+.archive-icon-button:active,
+.delete-icon-button:active {
+  border: none;
+  background: none;
+  outline: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+}
+
+.archive-icon-button,
+.delete-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9c9c9c;
+  width: 18px;
+  height: 18px;
+}
+
+.archive-icon-button svg,
+.delete-icon-button svg {
+  width: 100%;
+  height: 100%;
+}
+
+.archive-icon-button:hover,
+.delete-icon-button:hover {
+  color: #777676;
+}
+
+.archive-icon-button:active,
+.delete-icon-button:active {
+  color: #3a3042;
+}
+
+.archived-section,
+.deleted-section {
+  margin-top: 12px;
+}
+
+.archived-section summary,
+.deleted-section summary {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 902px;
+  height: 39px;
+  padding: 0 20px;
+  border-radius: 15px;
+  background: #ede9e0;
+  color: #3a3042;
+  font-family:
+    'SF Pro',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 0.25px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.archived-section summary::before,
+.deleted-section summary::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 15px;
+  margin-right: 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='15' viewBox='0 0 9 15' fill='none'%3E%3Cpath d='M0.75 0.75L7.41667 7.41667L0.75 14.0833' stroke='%233A3042' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  transition: transform 0.15s ease;
+}
+
+.archived-section[open] summary::before,
+.deleted-section[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.delete-list-icon-button,
+.delete-list-icon-button:focus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  aspect-ratio: 1/1;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: #ea3636;
+}
+
+.delete-list-icon-button svg {
+  width: 100%;
+  height: 100%;
+}
+
+.delete-list-icon-button:hover {
+  color: #ab2121;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: none;
+}
+
+.delete-list-icon-button:active {
+  color: #7a1515;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: none;
 }
