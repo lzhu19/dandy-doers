@@ -221,12 +221,16 @@
 }
 .archive-icon-button,
 .delete-icon-button,
+.edit-icon-button,
 .archive-icon-button:hover,
 .delete-icon-button:hover,
+.edit-icon-button:hover,
 .archive-icon-button:focus,
 .delete-icon-button:focus,
+.edit-icon-button:focus,
 .archive-icon-button:active,
-.delete-icon-button:active {
+.delete-icon-button:active,
+.edit-icon-button:active {
   border: none;
   background: none;
   outline: none;
@@ -236,7 +240,8 @@
 }
 
 .archive-icon-button,
-.delete-icon-button {
+.delete-icon-button,
+.edit-icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -247,18 +252,27 @@
 }
 
 .archive-icon-button svg,
-.delete-icon-button svg {
+.delete-icon-button svg,
+.edit-icon-button svg {
   width: 100%;
   height: 100%;
 }
 
+.archive-icon-button:focus,
+.delete-icon-button:focus,
+.edit-icon-button:focus {
+  color: #9c9c9c;
+}
+
 .archive-icon-button:hover,
-.delete-icon-button:hover {
+.delete-icon-button:hover,
+.edit-icon-button:hover {
   color: #777676;
 }
 
 .archive-icon-button:active,
-.delete-icon-button:active {
+.delete-icon-button:active,
+.edit-icon-button:active {
   color: #3a3042;
 }
 
@@ -346,4 +360,25 @@
   outline: none;
   box-shadow: none;
   background: none;
+}
+
+.task-details-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 30%);
+}
+
+.task-details-popup {
+  width: 774px;
+  height: 865px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 15px;
+  background: #fffbf2;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 25%);
 }
