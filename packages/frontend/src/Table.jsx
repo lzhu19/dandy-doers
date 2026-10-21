@@ -1,7 +1,44 @@
-function TableHeader() {
+function TableHeader(props) {
+  const selectAll = props.taskData.every((row) =>
+    props.selectedTaskId.includes(row._id)
+  );
+  const selectedTask = props.selectedTaskId.length > 0;
   return (
     <thead>
       <tr>
+        <th>
+          <label htmlFor="select-all">
+            <input
+              type="checkbox"
+              id="select-all"
+              checked={selectAll}
+              onChange={(event) => {
+                if (event.target.checked) {
+                  props.setSelectedTaskId(props.taskData.map((row) => row._id));
+                } else {
+                  props.setSelectedTaskId([]);
+                }
+              }}
+            ></input>
+          </label>
+          {selectedTask === true && (
+            <div className="bulk-select-actions">
+              <button
+                className="archive-icon-button"
+                aria-label="Archive Task"
+                onClick={() => {
+                  props.selectedTaskId.forEach((id) => {
+                    props.archiveTask(id);
+                  });
+                }}
+              >
+                <ArchiveIcon />
+              </button>
+              {/* <button className="archive-icon-button" id="delete-button" aria-label="Delete task" onClick={() => props.removeTask(row._id)}><DeleteIcon/></button> */}
+              {/* <button className="archive-icon-button" id="delete-button" aria-label="Move Task" onClick={() => props.removeTask(row._id)}>Move To New List</button> */}
+            </div>
+          )}
+        </th>
         <th>Task</th>
         <th>ID</th>
       </tr>
@@ -14,6 +51,24 @@ function TableBody(props) {
     const isEditing = props.editingId === row._id;
     return (
       <tr key={row._id}>
+        <td>
+          <label htmlFor={`checkbox-${row._id}`}>
+            <input
+              type="checkbox"
+              id={`checkbox-${row._id}`}
+              checked={props.selectedTaskId.includes(row._id)}
+              onChange={(event) => {
+                if (event.target.checked) {
+                  props.setSelectedTaskId((previous) => [...previous, row._id]);
+                } else {
+                  props.setSelectedTaskId((previous) =>
+                    previous.filter((id) => id !== row._id)
+                  );
+                }
+              }}
+            ></input>
+          </label>
+        </td>
         <td onClick={() => props.setEditingId(row._id)}>
           {(() => {
             if (isEditing) {
@@ -60,13 +115,21 @@ function TableBody(props) {
 function Table(props) {
   return (
     <table>
-      <TableHeader />
+      <TableHeader
+        taskData={props.taskData}
+        selectedTaskId={props.selectedTaskId}
+        setSelectedTaskId={props.setSelectedTaskId}
+        removeTask={props.removeTask}
+        archiveTask={props.archiveTask}
+      />
       <TableBody
         taskData={props.taskData}
         removeTask={props.removeTask}
         archiveTask={props.archiveTask}
         //deleteTask={props.deleteTask}
         updateTask={props.updateTask}
+        selectedTaskId={props.selectedTaskId}
+        setSelectedTaskId={props.setSelectedTaskId}
         editingId={props.editingId}
         setEditingId={props.setEditingId}
       />

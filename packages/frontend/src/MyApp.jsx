@@ -20,6 +20,7 @@ function MyApp() {
   const [isDeletingList, setIsDeletingList] = useState(false);
   //starts as null, when user clicks set EditingId to the task's id
   const [editingId, setEditingId] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState([]);
 
   const [archivedTasks, setArchivedTasks] = useState([]);
 
@@ -444,6 +445,8 @@ function MyApp() {
                     taskData={currentTasks}
                     removeTask={deleteTask}
                     updateTask={updateOneTask}
+                    selectedTaskId={selectedTaskId}
+                    setSelectedTaskId={setSelectedTaskId}
                     archiveTask={archiveTask}
                     editingId={editingId}
                     setEditingId={setEditingId}
