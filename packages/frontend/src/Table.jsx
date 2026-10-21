@@ -34,7 +34,17 @@ function TableHeader(props) {
               >
                 <ArchiveIcon />
               </button>
-              {/* <button className="archive-icon-button" id="delete-button" aria-label="Delete task" onClick={() => props.removeTask(row._id)}><DeleteIcon/></button> */}
+              <button
+                className="archive-icon-button"
+                aria-label="Delete Task"
+                onClick={() => {
+                  props.selectedTaskId.forEach((id) => {
+                    props.removeTask(id);
+                  });
+                }}
+              >
+                <DeleteIcon />
+              </button>
               {/* <button className="archive-icon-button" id="delete-button" aria-label="Move Task" onClick={() => props.removeTask(row._id)}>Move To New List</button> */}
             </div>
           )}
