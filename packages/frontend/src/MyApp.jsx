@@ -6,6 +6,7 @@ import ArchiveList from './ArchiveList';
 import DeleteList from './DeleteList';
 import ListSection from './ListSection';
 import SearchBar from './SearchBar';
+import TaskDetails from './TaskDetails';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
@@ -20,6 +21,9 @@ function MyApp() {
   const [isDeletingList, setIsDeletingList] = useState(false);
   //starts as null, when user clicks set EditingId to the task's id
   const [editingId, setEditingId] = useState(null);
+
+  //starts as null then wehn user clicks the edit icon set taskDetailsId to the task's id
+  const [taskDetailsId, setTaskDetailsId] = useState(null);
 
   const [archivedTasks, setArchivedTasks] = useState([]);
 
@@ -447,6 +451,7 @@ function MyApp() {
                     archiveTask={archiveTask}
                     editingId={editingId}
                     setEditingId={setEditingId}
+                    setTaskDetailsId={setTaskDetailsId}
                   />
                 )}
                 <Form handleSubmit={updateList} />
@@ -554,6 +559,9 @@ function MyApp() {
             </div>
           </section>
         </div>
+      )}
+      {taskDetailsId && (
+        <TaskDetails closeTaskDetails={() => setTaskDetailsId(null)} />
       )}
     </>
   );
