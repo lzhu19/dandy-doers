@@ -1163,7 +1163,62 @@ describe('emptySearchResult', () => {
     // Check that search results remain hidden. 
     const searchResult = document.querySelector('#myTasks');
     expect(within(searchResult).getByText('Homework 1')).not.toBeVisible();
+  });
+
+  it('hides search results when the input is cleared', async () => {
+  const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      // Return the School list
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
+        });
+      }
+
+      // Return Homework 1 as an active task
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Homework 1',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              },
+            ]),
+        });
+      }
+    });
+
+    render(<MyApp />);
+
+   // Validate that tasks exist.
+    expect(
+      await screen.findByRole('heading', { name: 'School' })
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 1'})).toBeInTheDocument();
     
+    // Check that the search bar appears and takes user input.
+    const searchbar = screen.getByPlaceholderText('Search for a task! ✎ ̼');
+    await user.type(searchbar, 'Home');
+    expect(searchbar).toHaveValue('Home');
+
+    // Check that only matched search results do appear. 
+    const searchResult = document.querySelector('#myTasks');
+    expect(within(searchResult).getByText('Homework 1')).toBeVisible();
+
+    await user.clear(searchbar);
+
+    expect(searchbar).toHaveValue('');
+    expect(within(searchResult).getByText('Homework 1')).not.toBeVisible();
+
   });
 });
 
@@ -1274,4 +1329,518 @@ describe('exclude archived and deleted tasks from search results', () => {
     expect(within(searchResult).queryByText('Homework 1')).not.toBeInTheDocument();
 
   });
+});
+
+// Search bar returns a matching result.
+describe('matching search results', () => {
+  it('returns a task that matches part of the task name', async () => {
+  const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      // Return the School list
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
+        });
+      }
+
+      // Return Homework 1 as an active task
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Homework 1',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              },
+            ]),
+        });
+      }
+    });
+
+    render(<MyApp />);
+
+   // Validate that tasks exist.
+    expect(
+      await screen.findByRole('heading', { name: 'School' })
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 1'})).toBeInTheDocument();
+    
+    // Check that the search bar appears and takes user input.
+    const searchbar = screen.getByPlaceholderText('Search for a task! ✎ ̼');
+    await user.type(searchbar, 'Home');
+    expect(searchbar).toHaveValue('Home');
+
+    // Check that only matched search results do appear. 
+    const searchResult = document.querySelector('#myTasks');
+    expect(within(searchResult).getByText('Homework 1')).toBeVisible();
+  });
+
+  it('returns a task that matches part of the task name regardless of case sensitivity', async () => {
+  const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      // Return the School list
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
+        });
+      }
+
+      // Return Homework 1 and Finish report as an active task
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Homework 1',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              },
+
+              {
+                _id: 'task-1234',
+                name: 'Finish report',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              }
+            ]),
+        });
+      }
+    });
+
+    render(<MyApp />);
+
+   // Validate that tasks exist.
+    expect(
+      await screen.findByRole('heading', { name: 'School' })
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 1'})).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Finish report'})).toBeInTheDocument();
+    
+    // Check that the search bar appears and takes user input.
+    const searchbar = screen.getByPlaceholderText('Search for a task! ✎ ̼');
+    await user.type(searchbar, 'hOme');
+    expect(searchbar).toHaveValue('hOme');
+
+    // Check that only matched search results do appear. 
+    const searchResult = document.querySelector('#myTasks');
+    expect(within(searchResult).getByText('Homework 1')).toBeVisible();
+    expect(within(searchResult).getByText('Finish report')).not.toBeVisible();
+  });
+
+  it('returns multiple matches regardless of case sensitivity', async () => {
+  const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      // Return the School list
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
+        });
+      }
+
+      // Return Homework 1,2 and 3 as an active task
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Homework 1',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              },
+
+              {
+                _id: 'task-1234',
+                name: 'Homework 2',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              }, 
+              {
+                _id: 'task-1235',
+                name: 'Homework 3',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              }, 
+              {
+                _id: 'task-1237',
+                name: 'Finish report',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              }
+            ]),
+        });
+      }
+    });
+
+    render(<MyApp />);
+
+   // Validate that tasks exist.
+    expect(
+      await screen.findByRole('heading', { name: 'School' })
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 1'})).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 2'})).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 3'})).toBeInTheDocument();
+    
+    // Check that the search bar appears and takes user input.
+    const searchbar = screen.getByPlaceholderText('Search for a task! ✎ ̼');
+    await user.type(searchbar, 'hOme');
+    expect(searchbar).toHaveValue('hOme');
+
+    // Check that only matched search results do appear. 
+    const searchResult = document.querySelector('#myTasks');
+    expect(within(searchResult).getByText('Homework 1')).toBeVisible();
+    expect(within(searchResult).getByText('Homework 2')).toBeVisible();
+    expect(within(searchResult).getByText('Homework 3')).toBeVisible();
+    expect(within(searchResult).getByText('Finish report')).not.toBeVisible();
+  });
+
+  it('returns no matches regardless of case sensitvity', async () => {
+  const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      // Return the School list
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
+        });
+      }
+
+      // Return Homework 1,2 and 3 as an active task
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Homework 1',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              },
+
+              {
+                _id: 'task-1234',
+                name: 'Homework 2',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              }, 
+              {
+                _id: 'task-1235',
+                name: 'Homework 3',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              }, 
+              {
+                _id: 'task-1237',
+                name: 'Finish report',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              }
+            ]),
+        });
+      }
+    });
+
+    render(<MyApp />);
+
+   // Validate that tasks exist.
+    expect(
+      await screen.findByRole('heading', { name: 'School' })
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 1'})).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 2'})).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 3'})).toBeInTheDocument();
+    
+    // Check that the search bar appears and takes user input.
+    const searchbar = screen.getByPlaceholderText('Search for a task! ✎ ̼');
+    await user.type(searchbar, 'ilovecats >^•-•^<');
+    expect(searchbar).toHaveValue('ilovecats >^•-•^<');
+
+    // Check that only matched search results do appear. 
+    const searchResult = document.querySelector('#myTasks');
+    expect(within(searchResult).getByText('Homework 1')).not.toBeVisible();
+    expect(within(searchResult).getByText('Homework 2')).not.toBeVisible();
+    expect(within(searchResult).getByText('Homework 3')).not.toBeVisible();
+    expect(within(searchResult).getByText('Finish report')).not.toBeVisible();
+  });
+
+  it('returns only tasks from the selected list', async () => {
+  const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      // Return the School list
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }, { _id: 'list-12', name: 'Groceries' }]),
+        });
+      }
+
+      // Return as an active task
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Buy teacher',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              },
+              {
+                _id: 'task-124',
+                name: 'Buy cheese',
+                listId: 'list-12',
+                archived: false,
+                deleted: false
+              }
+            ]),
+        });
+      }
+    });
+
+    render(<MyApp />);
+
+   // Validate that tasks exist.
+    expect(
+      await screen.findByRole('heading', { name: 'School' })
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Buy teacher'})).toBeInTheDocument();
+    
+    // Check that the search bar appears and takes user input.
+    const searchbar = screen.getByPlaceholderText('Search for a task! ✎ ̼');
+    await user.type(searchbar, 'Buy');
+    expect(searchbar).toHaveValue('Buy');
+
+    // Check that only matched search results do appear. 
+    const searchResult = document.querySelector('#myTasks');
+    expect(within(searchResult).getByText('Buy teacher')).toBeVisible();
+    expect(within(searchResult).queryByText('Buy cheese')).not.toBeInTheDocument();
+
+  });
+});
+
+describe('delete/archive a task from search bar', () => {
+  it('deletes only the task selected from search bar', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      // Return the School list
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
+        });
+      }
+
+      // check that Homework 1 is deleted
+      if (url === 'http://localhost:8000/tasks/task-123/delete' && options.method === 'PUT') {
+        return Promise.resolve({
+          ok: true,
+        status: 200,
+        json: () =>
+        Promise.resolve({
+          _id: 'task-123',
+          name: 'Homework 1',
+          listId: 'list-123',
+          archived: false,
+          deleted: true,
+        }),
+      });
+      }
+
+      // Return Homework 1 as an active task
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Homework 1',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              },
+              {
+                _id: 'task-125',
+                name: 'Homework 2',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              },
+            ]),
+        });
+      }
+    });
+
+    render(<MyApp />);
+
+    // Validate that tasks exist.
+    expect(
+      await screen.findByRole('heading', { name: 'School' })
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 1'})).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 2'})).toBeInTheDocument();
+    
+    // Add user input to search bar
+    const searchbar = screen.getByPlaceholderText('Search for a task! ✎ ̼');
+    await user.type(searchbar, 'Homework');
+    expect(searchbar).toHaveValue('Homework');
+
+    // Check that search results
+    const searchResult = document.querySelector('#myTasks');
+    
+    const deleted = within(searchResult).getByText('Homework 1').closest('li');
+    await user.click(within(deleted).getByRole('button', { name: 'Delete', exact: true }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('cell', { name: 'Homework 1' })).not.toBeInTheDocument();
+    });
+      expect(screen.getByRole('cell', { name: 'Homework 2' })).toBeInTheDocument();
+
+  // Verify the backend request
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-123/delete',
+      {
+        method: 'PUT',
+        headers: {
+          'Content-type': 'application/json',
+        },
+        body: JSON.stringify({ deleted: true }),
+      }
+    );
+   });
+
+   it('archives only the task selected from search bar', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      // Return the School list
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
+        });
+      }
+
+      // check that Homework 1 is archived
+      if (url === 'http://localhost:8000/tasks/task-123/archive' && options.method === 'PUT') {
+        return Promise.resolve({
+          ok: true,
+        status: 200,
+        json: () =>
+        Promise.resolve({
+          _id: 'task-123',
+          name: 'Homework 1',
+          listId: 'list-123',
+          archived: true,
+          deleted: false,
+        }),
+      });
+      }
+
+      // Return Homework 1 as an active task
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Homework 1',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              },
+              {
+                _id: 'task-125',
+                name: 'Homework 2',
+                listId: 'list-123',
+                archived: false,
+                deleted: false
+              },
+            ]),
+        });
+      }
+    });
+
+    render(<MyApp />);
+
+    // Validate that tasks exist.
+    expect(
+      await screen.findByRole('heading', { name: 'School' })
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 1'})).toBeInTheDocument();
+    expect(await screen.findByRole('cell', {name: 'Homework 2'})).toBeInTheDocument();
+    
+    // Add user input to search bar
+    const searchbar = screen.getByPlaceholderText('Search for a task! ✎ ̼');
+    await user.type(searchbar, 'Homework');
+    expect(searchbar).toHaveValue('Homework');
+
+    // Check that search results
+    const searchResult = document.querySelector('#myTasks');
+    
+    const archived = within(searchResult).getByText('Homework 1').closest('li');
+    await user.click(within(archived).getByRole('button', { name: 'Archive', exact: true }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('cell', { name: 'Homework 1' })).not.toBeInTheDocument();
+    });
+      expect(screen.getByRole('cell', { name: 'Homework 2' })).toBeInTheDocument();
+
+  // Verify the backend request
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-123/archive',
+      {
+        method: 'PUT',
+        headers: {
+          'Content-type': 'application/json',
+        },
+        body: JSON.stringify({ archived: true }),
+      }
+    );
+   });
 });
