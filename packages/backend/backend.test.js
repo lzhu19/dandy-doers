@@ -15,6 +15,7 @@ jest.unstable_mockModule('./task-services.js', () => ({
   restoreArchivedTask: jest.fn(),
   restoreDeletedTask: jest.fn(),
   getDeletedTasks: jest.fn(),
+  reorderTasks: jest.fn(),
 }));
 
 jest.unstable_mockModule('./list-services.js', () => ({

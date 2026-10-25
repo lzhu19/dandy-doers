@@ -1,7 +1,7 @@
 //Import statements
 import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import {
   beforeEach,
   beforeAll,
@@ -306,7 +306,9 @@ describe('createTask', () => {
     );
 
     // Verify the task appears on the page
-    expect(await screen.findByText('Homework 1')).toBeInTheDocument();
+    expect(
+  await screen.findByRole('cell', { name: 'Homework 1' })
+).toBeInTheDocument();
 
     // Verify the task was sent to the backend
     expect(fetch).toHaveBeenCalledWith(
@@ -380,7 +382,9 @@ describe('archiveTask', () => {
     render(<MyApp />);
 
     // Verify the task exists before archiving itit
-    expect(await screen.findByText('Homework 1')).toBeInTheDocument();
+    expect(
+await screen.findByRole('cell', { name: 'Homework 1' })
+).toBeInTheDocument();
 
     // Click Archive
     await user.click(screen.getByRole('button', { name: 'Archive task' }));
@@ -466,7 +470,9 @@ describe('deleteTask', () => {
     render(<MyApp />);
 
     // Verify the task exists before deleting it
-    expect(await screen.findByText('Homework 1')).toBeInTheDocument();
+    expect(
+await screen.findByRole('cell', { name: 'Homework 1' })
+).toBeInTheDocument();
 
     // Click Delete
     await user.click(screen.getByRole('button', { name: 'Delete task' }));
@@ -575,7 +581,9 @@ describe('undoDeleteTask', () => {
       ).not.toBeInTheDocument();
     });
 
-    expect(screen.getByText('Homework 1')).toBeInTheDocument();
+    expect(
+screen.getByRole('cell', { name: 'Homework 1' })
+).toBeInTheDocument();
     // Verify the restore request
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:8000/tasks/task-123/restore-deleted',
@@ -670,7 +678,9 @@ describe('undoArchiveTask', () => {
       ).not.toBeInTheDocument();
     });
 
-    expect(screen.getByText('Homework 1')).toBeInTheDocument();
+    expect(
+  screen.getByRole('cell', { name: 'Homework 1' })
+).toBeInTheDocument();
     // Verify the restore request
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:8000/tasks/task-123/restore-archived',
@@ -907,14 +917,19 @@ describe('editTask', () => {
     render(<MyApp />);
 
     // Wait for the original task to appear.
-    expect(await screen.findByText('Homework 1')).toBeInTheDocument();
+    expect(
+await screen.findByRole('cell', { name: 'Homework 1' })
+).toBeInTheDocument();
 
-    // Wait for the original task to appear.
-    const taskName = await screen.findByText('Homework 1');
-    expect(taskName).toBeInTheDocument();
+    // Find the task in the main table.
+const taskName = await screen.findByRole('cell', {
+  name: 'Homework 1',
+});
 
-    // Click the task name to edit it.
-    await user.click(taskName);
+expect(taskName).toBeInTheDocument();
+
+// Click the task name to edit it.
+await user.click(taskName);
 
     // Find the input containing the existing task name.
     const editInput = screen.getByDisplayValue('Homework 1');
@@ -926,8 +941,10 @@ describe('editTask', () => {
     // Click outside the input to save the change.
     await user.click(document.body);
 
-    // Verify the updated name appears.
-    expect(await screen.findByText('Updated Homework')).toBeInTheDocument();
+    // Verify the updated name appears in the task table.
+expect(
+  await screen.findByRole('cell', { name: 'Updated Homework' })
+).toBeInTheDocument();
 
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:8000/tasks/task-123',
@@ -938,6 +955,142 @@ describe('editTask', () => {
     );
   });
 });
+
+
+// Reorders tasks
+describe('reorderTasks', () => {
+  it('reorders tasks successfully', async () => {
+    const tasks = [
+      {
+        _id: 'task-1',
+        name: 'Homework 1',
+        listId: 'list-123',
+        archived: false,
+        deleted: false,
+        position: 0,
+      },
+      {
+        _id: 'task-2',
+        name: 'Homework 2',
+        listId: 'list-123',
+        archived: false,
+        deleted: false,
+        position: 1,
+      },
+      {
+        _id: 'task-3',
+        name: 'Homework 3',
+        listId: 'list-123',
+        archived: false,
+        deleted: false,
+        position: 2,
+      },
+    ];
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      // Return the School list.
+      if (
+        url === 'http://localhost:8000/lists' &&
+        !options.method
+      ) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'School' },
+            ]),
+        });
+      }
+
+      // Return the existing tasks.
+      if (
+        url === 'http://localhost:8000/tasks' &&
+        !options.method
+      ) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve(tasks),
+        });
+      }
+
+      // Handle the reorder request.
+      if (
+        url ===
+          'http://localhost:8000/lists/list-123/reorder-tasks' &&
+        options.method === 'PUT'
+      ) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { ...tasks[1], position: 0 },
+              { ...tasks[0], position: 1 },
+              { ...tasks[2], position: 2 },
+            ]),
+        });
+      }
+
+      return Promise.reject(
+        new Error(`Unexpected fetch URL: ${url}`)
+      );
+    });
+
+    render(<MyApp />);
+
+    // Wait for the tasks to appear.
+    await screen.findByRole('cell', {
+      name: 'Homework 1',
+    });
+
+    // Find the draggable table rows.
+    const homework1Row = screen
+      .getByRole('cell', { name: 'Homework 1' })
+      .closest('tr');
+
+    const homework2Row = screen
+      .getByRole('cell', { name: 'Homework 2' })
+      .closest('tr');
+
+    // Simulate dragging Homework 1 onto Homework 2.
+    fireEvent.dragStart(homework1Row);
+    fireEvent.drop(homework2Row);
+
+    // Verify the reorder request sent to the backend.
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:8000/lists/list-123/reorder-tasks',
+        expect.objectContaining({
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            taskIds: ['task-2', 'task-1', 'task-3'],
+          }),
+        })
+      );
+    });
+
+    // Verify that the task order updates in the table.
+    await waitFor(() => {
+      const rows = screen
+        .getAllByRole('row')
+        .filter((row) => row.querySelector('td'));
+
+      expect(
+        rows.map((row) => row.querySelectorAll('td')[0].textContent)
+      ).toEqual([
+        'Homework 2',
+        'Homework 1',
+        'Homework 3',
+      ]);
+    });
+  });
+});
+
 
 //Tests list switching
 describe('switch lists', () => {
@@ -991,19 +1144,28 @@ describe('switch lists', () => {
       await screen.findByRole('heading', { name: 'School' })
     ).toBeInTheDocument();
 
-    expect(await screen.findByText('Homework 1')).toBeInTheDocument();
+    expect(
+await screen.findByRole('cell', { name: 'Homework 1' })
+).toBeInTheDocument();
     expect(screen.queryByText('Finish report')).not.toBeInTheDocument();
 
     // Click Work in the sidebar to switch lists.
     await user.click(screen.getByText('Work'));
 
     // The selected list and its tasks should change.
-    expect(
-      await screen.findByRole('heading', { name: 'Work' })
-    ).toBeInTheDocument();
+expect(
+  await screen.findByRole('heading', { name: 'Work' })
+).toBeInTheDocument();
 
-    expect(await screen.findByText('Finish report')).toBeInTheDocument();
-    expect(screen.queryByText('Homework 1')).not.toBeInTheDocument();
+// Verify Finish report appears in the main task table.
+expect(
+  await screen.findByRole('cell', { name: 'Finish report' })
+).toBeInTheDocument();
+
+// Verify Homework 1 is no longer in the main task table.
+expect(
+  screen.queryByRole('cell', { name: 'Homework 1' })
+).not.toBeInTheDocument();
   });
 });
 

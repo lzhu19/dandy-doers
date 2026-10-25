@@ -265,7 +265,19 @@ app.put('/tasks/:id/restore-deleted', (req, res) => {
       res.status(500).send('Could not restore deleted task.');
     });
 });
-
+app.put('/tasks/:id', (req, res) => {
+  // Updates a task's name using its ID
+  updateTask(req.params.id, req.body)
+    .then((task) =>
+      task
+        ? res.status(200).json(task)
+        : res.status(404).send('Task not found. Cannot update.')
+    )
+    .catch((error) => {
+      console.error('Could not update task name: ', error);
+      res.status(500).send('Could not update task name.');
+    });
+});
 ////////// listen //////////
 
 async function startServer() {
