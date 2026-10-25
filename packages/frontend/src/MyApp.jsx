@@ -376,6 +376,67 @@ function MyApp() {
     (task) => String(task.listId) === String(currentList?._id)
   );
 
+async function reorderTasks(draggedTaskId, targetTaskId) {
+  if (!currentList) return;
+
+  
+  const listTasks = tasks.filter(
+    (task) => String(task.listId) === String(currentList._id)
+  );
+
+  const reordered = [...listTasks];
+
+  const draggedIndex = reordered.findIndex(
+    (task) => task._id === draggedTaskId
+  );
+
+  const targetIndex = reordered.findIndex(
+    (task) => task._id === targetTaskId
+  );
+
+  
+  if (draggedIndex === -1 || targetIndex === -1) return;
+
+  
+  const [draggedItem] = reordered.splice(draggedIndex, 1);
+
+  
+  reordered.splice(targetIndex, 0, draggedItem);
+
+ 
+  setTasks((allTasks) => {
+    const otherTasks = allTasks.filter(
+      (task) => String(task.listId) !== String(currentList._id)
+    );
+
+    return [...otherTasks, ...reordered];
+  });
+
+ 
+  try {
+    const response = await fetch(
+      `http://localhost:8000/lists/${currentList._id}/reorder-tasks`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          taskIds: reordered.map((task) => task._id),
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Unable to save task order (${response.status}).`);
+    }
+
+    console.log('Task order saved successfully!');
+  } catch (error) {
+    console.error('Could not save task order:', error);
+  }
+}
+
   return (
     <>
       <div className="main-layout">
@@ -446,6 +507,7 @@ function MyApp() {
                 ) : (
                   <Table
                     taskData={currentTasks}
+                     reorderTasks={reorderTasks}
                     removeTask={deleteTask}
                     updateTask={updateOneTask}
                     archiveTask={archiveTask}
@@ -566,6 +628,7 @@ function MyApp() {
     </>
   );
 }
+
 
 function TrashIcon() {
   return (

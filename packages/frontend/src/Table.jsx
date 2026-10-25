@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+
 function TableHeader() {
   return (
     <thead>
@@ -10,10 +12,36 @@ function TableHeader() {
 }
 
 function TableBody(props) {
+  const draggedTaskId = useRef(null);
+
   const rows = props.taskData.map((row) => {
     const isEditing = props.editingId === row._id;
+
     return (
-      <tr key={row._id}>
+      <tr
+        key={row._id}
+        draggable={true}
+        onDragStart={(event) => {
+          draggedTaskId.current = row._id;
+          event.currentTarget.classList.add('dragging');
+        }}
+        onDragEnd={(event) => {
+          event.currentTarget.classList.remove('dragging');
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+        }}
+        onDrop={(event) => {
+            event.preventDefault();
+
+            const targetTaskId = row._id;
+
+            console.log('Dropped task:', draggedTaskId.current);
+            console.log('Target task:', targetTaskId);
+
+            props.reorderTasks(draggedTaskId.current, targetTaskId);
+          }}
+      >
         <td onClick={() => props.setEditingId(row._id)}>
           {(() => {
             if (isEditing) {
@@ -32,7 +60,9 @@ function TableBody(props) {
             }
           })()}
         </td>
+
         <td>{row._id}</td>
+
         <td>
           <div className="task-actions">
             <button
@@ -42,6 +72,7 @@ function TableBody(props) {
             >
               <EditIcon />
             </button>
+
             <button
               className="archive-icon-button"
               aria-label="Archive task"
@@ -49,6 +80,7 @@ function TableBody(props) {
             >
               <ArchiveIcon />
             </button>
+
             <button
               className="delete-icon-button"
               aria-label="Delete task"
@@ -61,6 +93,7 @@ function TableBody(props) {
       </tr>
     );
   });
+
   return <tbody>{rows}</tbody>;
 }
 
@@ -70,6 +103,7 @@ function Table(props) {
       <TableHeader />
       <TableBody
         taskData={props.taskData}
+         reorderTasks={props.reorderTasks}
         removeTask={props.removeTask}
         archiveTask={props.archiveTask}
         //deleteTask={props.deleteTask}

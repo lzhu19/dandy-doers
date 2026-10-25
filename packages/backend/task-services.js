@@ -3,12 +3,54 @@ import taskModel from './task.js';
 function getTasks(name) {
   let promise;
   if (!name) {
-    promise = taskModel.find();
+    promise = taskModel.find().sort({ position: 1 });
   } else {
     promise = findTaskByName(name);
   }
   return promise;
 }
+
+
+async function reorderTasks(listId, taskIds) {
+  // Find all tasks in the specified list
+  const tasks = await taskModel.find({
+  listId: listId,
+  archived: false,
+  deleted: false,
+});
+
+  // Verify that the submitted IDs represent every task in the list
+  const existingIds = tasks.map((task) => task._id.toString());
+  const submittedIds = taskIds.map((id) => String(id));
+
+  if (
+    existingIds.length !== submittedIds.length ||
+    !existingIds.every((id) => submittedIds.includes(id)) ||
+    new Set(submittedIds).size !== submittedIds.length
+  ) {
+    throw new Error('Task IDs must represent every task in the list exactly once.');
+  }
+
+  // Create an update operation for each task
+  const operations = taskIds.map((taskId, index) => ({
+    updateOne: {
+      filter: {
+        _id: taskId,
+        listId: listId,
+      },
+      update: {
+        $set: { position: index },
+      },
+    },
+  }));
+
+  // Save the new positions in MongoDB
+  await taskModel.bulkWrite(operations);
+
+  // Return the tasks in their new order
+  return taskModel.find({ listId: listId }).sort({ position: 1 });
+}
+
 
 function findTaskById(id) {
   // /tasks/<id>
@@ -17,7 +59,7 @@ function findTaskById(id) {
 
 function findTaskByName(name) {
   // /tasks?name=<name>
-  return taskModel.find({ name: name });
+  return taskModel.find({ name: name }).sort({ position: 1 });
 }
 
 function addTask(task) {
@@ -90,6 +132,7 @@ export {
   permanentlyDeleteTask,
   archiveTask,
   getArchivedTasks,
+  reorderTasks,
   restoreArchivedTask,
   restoreDeletedTask,
   getDeletedTasks,
