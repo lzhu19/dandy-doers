@@ -38,6 +38,13 @@ function TableBody(props) {
         <td>
           <div className="task-actions">
             <button
+              className="edit-icon-button"
+              aria-label="Open task details"
+              onClick={() => props.setTaskDetailsId(row._id)}
+            >
+              <EditIcon />
+            </button>
+            <button
               className="archive-icon-button"
               aria-label="Archive task"
               onClick={() => props.archiveTask(row._id)}
@@ -79,6 +86,7 @@ function Table(props) {
         setSelectedTaskId={props.setSelectedTaskId}
         editingId={props.editingId}
         setEditingId={props.setEditingId}
+        setTaskDetailsId={props.setTaskDetailsId}
       />
     </table>
   );
@@ -104,6 +112,23 @@ function DeleteIcon() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 37 37" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M23.3358 5.34938C23.119 5.13285 22.8252 5.01123 22.5188 5.01123C22.2124 5.01123 21.9185 5.13285 21.7017 5.34938L7.52913 19.5204C7.38423 19.6654 7.28048 19.8463 7.22851 20.0445L5.68684 25.9491C5.63595 26.1443 5.63697 26.3493 5.68982 26.5439C5.74266 26.7385 5.84548 26.9159 5.98807 27.0585C6.13066 27.2011 6.30807 27.3039 6.50268 27.3568C6.69729 27.4096 6.90234 27.4106 7.09747 27.3598L12.999 25.8181C13.198 25.7659 13.3794 25.6616 13.5247 25.5159L27.6957 11.3449C27.9122 11.1281 28.0338 10.8342 28.0338 10.5278C28.0338 10.2214 27.9122 9.92755 27.6957 9.71075L23.3358 5.34938ZM9.3853 20.9341L22.5188 7.80217L25.2429 10.5263L12.111 23.6598L8.42176 24.6233L9.3853 20.9341Z"
+        fill="currentColor"
+      />
+      <path
+        d="M6.16699 29.2947C5.86034 29.2947 5.56624 29.4165 5.3494 29.6333C5.13256 29.8502 5.01074 30.1443 5.01074 30.4509C5.01074 30.7576 5.13256 31.0517 5.3494 31.2685C5.56624 31.4854 5.86034 31.6072 6.16699 31.6072H29.292C29.5986 31.6072 29.8927 31.4854 30.1096 31.2685C30.3264 31.0517 30.4482 30.7576 30.4482 30.4509C30.4482 30.1443 30.3264 29.8502 30.1096 29.6333C29.8927 29.4165 29.5986 29.2947 29.292 29.2947H6.16699Z"
+        fill="currentColor"
       />
     </svg>
   );
