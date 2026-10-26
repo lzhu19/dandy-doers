@@ -140,6 +140,24 @@ tr.drop-target td {
   margin: 0;
 }
 
+.main-header-title-button {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.main-header-title input {
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
 .header-underline {
   width: 100%;
   max-width: 923px;
