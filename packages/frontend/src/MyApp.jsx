@@ -431,6 +431,7 @@ function MyApp() {
 
               <div className="task-panel">
                 <SearchBar
+                  key={currentList?._id}
                   lists={lists}
                   removeTask={deleteTask}
                   taskData={currentTasks}

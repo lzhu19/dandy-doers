@@ -1708,7 +1708,7 @@ describe('matching search results', () => {
   });
 });
 
-describe('delete/archive a task from search bar', () => {
+describe('delete/archive a task from search bar and removes it from search query', () => {
   it('deletes only the task selected from search bar', async () => {
     const user = userEvent.setup();
 
@@ -1793,14 +1793,28 @@ describe('delete/archive a task from search bar', () => {
       within(deleted).getByRole('button', { name: 'Delete', exact: true })
     );
 
+    // check that after deleting the task, it is no longer displayed in search bar
     await waitFor(() => {
       expect(
         screen.queryByRole('cell', { name: 'Homework 1' })
       ).not.toBeInTheDocument();
+      expect(
+        within(searchResult).queryByText('Homework 1')
+      ).not.toBeInTheDocument();
+      expect(within(searchResult).getByText('Homework 2')).toBeVisible();
     });
-    expect(
-      screen.getByRole('cell', { name: 'Homework 2' })
-    ).toBeInTheDocument();
+
+    // query the tasks again
+    await user.clear(searchbar);
+    await user.type(searchbar, 'Homework');
+    expect(searchbar).toHaveValue('Homework');
+
+    await waitFor(() => {
+      expect(
+        within(searchResult).queryByText('Homework 1')
+      ).not.toBeInTheDocument();
+    });
+    expect(within(searchResult).getByText('Homework 2')).toBeVisible();
 
     // Verify the backend request
     expect(fetch).toHaveBeenCalledWith(
@@ -1815,7 +1829,7 @@ describe('delete/archive a task from search bar', () => {
     );
   });
 
-  it('archives only the task selected from search bar', async () => {
+  it('archives only the task selected from search bar and removes it from search query', async () => {
     const user = userEvent.setup();
 
     vi.mocked(fetch).mockImplementation((url, options = {}) => {
@@ -1899,14 +1913,28 @@ describe('delete/archive a task from search bar', () => {
       within(archived).getByRole('button', { name: 'Archive', exact: true })
     );
 
+    // check that after archiving the task, it is no longer displayed in search bar
     await waitFor(() => {
       expect(
         screen.queryByRole('cell', { name: 'Homework 1' })
       ).not.toBeInTheDocument();
+      expect(
+        within(searchResult).queryByText('Homework 1')
+      ).not.toBeInTheDocument();
+      expect(within(searchResult).getByText('Homework 2')).toBeVisible();
     });
-    expect(
-      screen.getByRole('cell', { name: 'Homework 2' })
-    ).toBeInTheDocument();
+
+    // query the tasks again to check they don't reappear
+    await user.clear(searchbar);
+    await user.type(searchbar, 'Homework');
+    expect(searchbar).toHaveValue('Homework');
+
+    await waitFor(() => {
+      expect(
+        within(searchResult).queryByText('Homework 1')
+      ).not.toBeInTheDocument();
+    });
+    expect(within(searchResult).getByText('Homework 2')).toBeVisible();
 
     // Verify the backend request
     expect(fetch).toHaveBeenCalledWith(
@@ -1919,5 +1947,131 @@ describe('delete/archive a task from search bar', () => {
         body: JSON.stringify({ archived: true }),
       }
     );
+  });
+});
+
+//Tests search bar queries a switched list.
+describe('search bar queries a switched list', () => {
+  it('search bar queries a switched list tasks', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'School' },
+              { _id: 'list-456', name: 'School 2' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Homework 1',
+                listId: 'list-123',
+                archived: false,
+                deleted: false,
+              },
+              {
+                _id: 'task-456',
+                name: 'Homework 2',
+                listId: 'list-456',
+                archived: false,
+                deleted: false,
+              },
+              {
+                _id: 'task-4565',
+                name: 'Do a backflip',
+                listId: 'list-456',
+                archived: false,
+                deleted: false,
+              },
+            ]),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+
+    // School is selected initially.
+    expect(
+      await screen.findByRole('heading', { name: 'School' })
+    ).toBeInTheDocument();
+
+    expect(
+      await screen.findByRole('cell', { name: 'Homework 1' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('cell', { name: 'Homework 2' })
+    ).not.toBeInTheDocument();
+
+    const searchbar = screen.getByPlaceholderText('Search for a task! ✎ ̼');
+    await user.type(searchbar, 'Homework');
+    expect(searchbar).toHaveValue('Homework');
+
+    const searchResult = document.querySelector('#myTasks');
+    expect(within(searchResult).getByText('Homework 1')).toBeVisible();
+    expect(
+      within(searchResult).queryByText('Homework 2')
+    ).not.toBeInTheDocument();
+    expect(
+      within(searchResult).queryByText('Do a backflip')
+    ).not.toBeInTheDocument();
+
+    // Click School 2 in the sidebar to switch lists.
+    await user.click(screen.getByText('School 2'));
+
+    // The selected list and its tasks should change.
+    expect(
+      await screen.findByRole('heading', { name: 'School 2' })
+    ).toBeInTheDocument();
+
+    const newSearchBar = screen.getByPlaceholderText('Search for a task! ✎ ̼');
+    const newSearchResult = document.querySelector('#myTasks');
+    console.log({
+      sameInput: searchbar === newSearchBar,
+      oldInputConnected: searchbar.isConnected,
+      oldValue: searchbar.value,
+      newValue: newSearchBar.value,
+    });
+    // expect the user's intital input to be gone upon switching tasks
+    expect(newSearchBar).toHaveValue('');
+
+    // check that no new tasks are queried given an empty search bar
+    await waitFor(() => {
+      expect(within(newSearchResult).getByText('Homework 2')).not.toBeVisible();
+      expect(
+        within(newSearchResult).getByText('Do a backflip')
+      ).not.toBeVisible();
+      expect(
+        within(newSearchResult).queryByText('Homework 1')
+      ).not.toBeInTheDocument();
+    });
+
+    // start a new search query
+    await user.clear(newSearchBar);
+    await user.type(newSearchBar, 'Homework');
+    expect(newSearchBar).toHaveValue('Homework');
+
+    await waitFor(() => {
+      expect(within(newSearchResult).getByText('Homework 2')).toBeVisible();
+      expect(
+        within(newSearchResult).getByText('Do a backflip')
+      ).not.toBeVisible();
+      expect(
+        within(newSearchResult).queryByText('Homework 1')
+      ).not.toBeInTheDocument();
+    });
   });
 });
