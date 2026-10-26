@@ -5,8 +5,8 @@ function TableHeader(props) {
   const selectedTask = props.selectedTaskId.length > 0;
   return (
     <thead>
-        <th>Task</th>
-        <th>ID</th>
+      <th>Task</th>
+      <th>ID</th>
     </thead>
   );
 }
