@@ -1,10 +1,12 @@
-function TableHeader() {
+function TableHeader(props) {
+  const selectAll = props.taskData.every((row) =>
+    props.selectedTaskId.includes(row._id)
+  );
+  const selectedTask = props.selectedTaskId.length > 0;
   return (
     <thead>
-      <tr>
-        <th>Task</th>
-        <th>ID</th>
-      </tr>
+      <th>Task</th>
+      <th>ID</th>
     </thead>
   );
 }
@@ -67,13 +69,21 @@ function TableBody(props) {
 function Table(props) {
   return (
     <table>
-      <TableHeader />
+      <TableHeader
+        taskData={props.taskData}
+        selectedTaskId={props.selectedTaskId}
+        setSelectedTaskId={props.setSelectedTaskId}
+        removeTask={props.removeTask}
+        archiveTask={props.archiveTask}
+      />
       <TableBody
         taskData={props.taskData}
         removeTask={props.removeTask}
         archiveTask={props.archiveTask}
         //deleteTask={props.deleteTask}
         updateTask={props.updateTask}
+        selectedTaskId={props.selectedTaskId}
+        setSelectedTaskId={props.setSelectedTaskId}
         editingId={props.editingId}
         setEditingId={props.setEditingId}
         setTaskDetailsId={props.setTaskDetailsId}
