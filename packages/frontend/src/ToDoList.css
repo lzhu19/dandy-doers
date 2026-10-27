@@ -196,6 +196,15 @@ tr.drop-target td {
   border-radius: 10px;
   background: #ffdf8c;
   color: #3a3042;
+  font-family:
+    'SF Pro',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: 0.25px;
   font-size: 16px;
   border: none;
   cursor: pointer;
@@ -395,4 +404,75 @@ tr.drop-target td {
   border-radius: 15px;
   background: #fffbf2;
   box-shadow: 0 8px 32px rgb(0 0 0 / 25%);
+}
+
+.task-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 50px;
+}
+
+.task-details-title {
+  margin: 0;
+  color: #3a3042;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: 0.25px;
+}
+
+.task-details-buttons {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.task-details-cancel,
+.task-details-cancel:hover,
+.task-details-cancel:focus,
+.task-details-cancel:active {
+  border: none;
+  background: none;
+  outline: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+}
+
+.task-details-cancel {
+  cursor: pointer;
+  color: #9e8eab;
+  font-family:
+    'SF Pro',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.25px;
+}
+
+.task-details-save {
+  width: 104px;
+  padding: 12px 30px;
+  margin: 0;
+  align-self: center;
+}
+
+.task-details-cancel:hover {
+  color: #806e8e;
+}
+
+.task-details-cancel:active {
+  color: #3a3042;
+}
+
+.task-details-divider {
+  width: 100%;
+  height: 2px;
+  margin: 0;
+  border: none;
+  background: #ece0c9;
 }
