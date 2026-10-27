@@ -1,8 +1,7 @@
-function TableHeader(props) {
-  const selectAll = props.taskData.every((row) =>
-    props.selectedTaskId.includes(row._id)
-  );
-  const selectedTask = props.selectedTaskId.length > 0;
+import { useRef, useState } from 'react';
+
+
+function TableHeader() {
   return (
     <thead>
       <th>Task</th>
@@ -12,10 +11,58 @@ function TableHeader(props) {
 }
 
 function TableBody(props) {
+  const draggedTaskId = useRef(null);
+  const [dropTargetId, setDropTargetId] = useState(null);
+
   const rows = props.taskData.map((row) => {
     const isEditing = props.editingId === row._id;
+
     return (
-      <tr key={row._id}>
+   <tr
+  key={row._id}
+  className={dropTargetId === row._id ? 'drop-target' : ''}
+  draggable={true}
+  onDragStart={(event) => {
+  draggedTaskId.current = row._id;
+  event.dataTransfer.effectAllowed = 'move';
+
+  // Use only the task row as the drag preview
+  event.dataTransfer.setDragImage(
+    event.currentTarget,
+    event.nativeEvent.offsetX,
+    event.nativeEvent.offsetY
+  );
+
+  event.currentTarget.classList.add('dragging');
+}}
+  onDragEnd={(event) => {
+  event.currentTarget.classList.remove('dragging');
+  draggedTaskId.current = null;
+  setDropTargetId(null);
+}}
+  onDragOver={(event) => {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+
+  if (draggedTaskId.current !== row._id) {
+    setDropTargetId(row._id);
+  }
+}}
+  onDrop={(event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const draggedId = draggedTaskId.current;
+  const targetTaskId = row._id;
+
+  if (draggedId && draggedId !== targetTaskId) {
+    props.reorderTasks(draggedId, targetTaskId);
+  }
+
+  draggedTaskId.current = null;
+  setDropTargetId(null);
+}}
+>
         <td onClick={() => props.setEditingId(row._id)}>
           {(() => {
             if (isEditing) {
@@ -34,7 +81,9 @@ function TableBody(props) {
             }
           })()}
         </td>
+
         <td>{row._id}</td>
+
         <td>
           <div className="task-actions">
             <button
@@ -44,6 +93,7 @@ function TableBody(props) {
             >
               <EditIcon />
             </button>
+
             <button
               className="archive-icon-button"
               aria-label="Archive task"
@@ -51,6 +101,7 @@ function TableBody(props) {
             >
               <ArchiveIcon />
             </button>
+
             <button
               className="delete-icon-button"
               aria-label="Delete task"
@@ -63,7 +114,39 @@ function TableBody(props) {
       </tr>
     );
   });
-  return <tbody>{rows}</tbody>;
+
+  const bottomDropZone = (
+  <tr
+    className={`bottom-drop-zone ${
+      dropTargetId === 'bottom' ? 'drop-target' : ''
+    }`}
+    onDragOver={(event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      setDropTargetId('bottom');
+    }}
+    onDrop={(event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const draggedId = draggedTaskId.current;
+
+      if (draggedId) {
+        props.reorderTasks(
+          draggedId,
+          props.taskData[props.taskData.length - 1]?._id
+        );
+      }
+
+      draggedTaskId.current = null;
+      setDropTargetId(null);
+    }}
+  >
+    <td colSpan="3"></td>
+  </tr>
+);
+
+  return <tbody>{rows}{bottomDropZone}</tbody>;
 }
 
 function Table(props) {
@@ -78,6 +161,7 @@ function Table(props) {
       />
       <TableBody
         taskData={props.taskData}
+         reorderTasks={props.reorderTasks}
         removeTask={props.removeTask}
         archiveTask={props.archiveTask}
         //deleteTask={props.deleteTask}

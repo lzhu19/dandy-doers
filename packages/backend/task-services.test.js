@@ -1,5 +1,5 @@
 // unit tests for task-services.js
-import { afterEach, describe, expect, it } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import mockingoose from 'mockingoose';
 import Task from './task.js';
 import {
@@ -7,6 +7,7 @@ import {
   findTaskById,
   findTaskByName,
   addTask,
+  reorderTasks,
   updateTask,
   deleteTask,
   permanentlyDeleteTask,
@@ -18,10 +19,18 @@ import {
 } from './task-services.js';
 
 const taskId = '507f1f77bcf86cd799439011';
+const taskId2 = '507f1f77bcf86cd799439012';
 const taskName = 'Write unit tests';
 const listId = '507f191e810c19729de860ea';
 const sampleTask = {
   _id: taskId,
+  name: taskName,
+  listId,
+  archived: false,
+  deleted: false,
+};
+const sampleTask2 = {
+  _id: taskId2,
   name: taskName,
   listId,
   archived: false,
@@ -33,6 +42,56 @@ const sampleDeletedTask = { ...sampleTask, deleted: true };
 afterEach(() => {
   mockingoose.resetAll();
 });
+
+describe('reorderTasks', () =>{
+it('rejects when the submitted IDs do not represent every task in the list', async () => {
+mockingoose(Task).toReturn((query) => {
+expect(query.getQuery()).toEqual({
+listId: listId,
+archived: false,
+deleted: false,
+});
+return [sampleTask, sampleTask2];
+}, 'find');
+
+await expect(
+reorderTasks(listId, [taskId])
+).rejects.toThrow(
+'Task IDs must represent every task in the list exactly once.'
+);
+});
+
+ it('creates an update operation for each task', async () => {
+  mockingoose(Task).toReturn([sampleTask, sampleTask2], 'find');
+
+  const bulkWriteSpy = jest
+    .spyOn(Task, 'bulkWrite')
+    .mockResolvedValue({ acknowledged: true });
+
+  await reorderTasks(listId, [taskId2, taskId]);
+
+  expect(bulkWriteSpy).toHaveBeenCalledTimes(1);
+
+  const operations = bulkWriteSpy.mock.calls[0][0];
+
+  expect(operations).toHaveLength(2);
+
+  expect(operations[0]).toEqual({
+    updateOne: {
+      filter: { _id: taskId2, listId },
+      update: { $set: { position: 0 } },
+    },
+  });
+
+  expect(operations[1]).toEqual({
+    updateOne: {
+      filter: { _id: taskId, listId },
+      update: { $set: { position: 1 } },
+    },
+  });
+});
+
+})
 
 describe('getTasks', () => {
   it('returns all tasks when no name is provided', async () => {

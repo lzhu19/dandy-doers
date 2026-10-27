@@ -10,6 +10,7 @@ import {
   updateTask,
   deleteTask,
   permanentlyDeleteTask,
+  reorderTasks,
   archiveTask,
   getArchivedTasks,
   restoreArchivedTask,
@@ -173,18 +174,21 @@ app.delete('/lists/:id', (req, res) => {
 
 ////////// PUT //////////
 
-app.put('/tasks/:id', (req, res) => {
-  // curl -X PUT http://localhost:8000/tasks/abc123
-  // updates a task's name by id
-  updateTask(req.params.id, req.body)
-    .then((task) =>
-      task
-        ? res.status(200).json(task)
-        : res.status(404).send('Task not found. Cannot update.')
-    )
+app.put('/lists/:id/reorder-tasks', (req, res) => {
+  const { taskIds } = req.body ?? {};
+  const listId = req.params.id;
+
+  // Check that taskIds is an array
+  if (!Array.isArray(taskIds)) {
+    return res.status(400).send('taskIds must be an array.');
+  }
+
+  // Save the new task order
+  reorderTasks(listId, taskIds)
+    .then((tasks) => res.status(200).json(tasks))
     .catch((error) => {
-      console.error('Could not update task name: ', error);
-      res.status(500).send('Could not update task name.');
+      console.error('Could not reorder tasks:', error);
+      res.status(500).send('Could not reorder tasks.');
     });
 });
 
@@ -261,7 +265,19 @@ app.put('/tasks/:id/restore-deleted', (req, res) => {
       res.status(500).send('Could not restore deleted task.');
     });
 });
-
+app.put('/tasks/:id', (req, res) => {
+  // Updates a task's name using its ID
+  updateTask(req.params.id, req.body)
+    .then((task) =>
+      task
+        ? res.status(200).json(task)
+        : res.status(404).send('Task not found. Cannot update.')
+    )
+    .catch((error) => {
+      console.error('Could not update task name: ', error);
+      res.status(500).send('Could not update task name.');
+    });
+});
 ////////// listen //////////
 
 async function startServer() {

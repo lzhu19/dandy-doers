@@ -20,6 +20,10 @@ const TaskSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    position: {
+    type: Number,
+    default: 0,
+    },
   },
   { collection: 'tasks_list' }
 );
