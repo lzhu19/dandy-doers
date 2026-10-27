@@ -21,6 +21,7 @@ function MyApp() {
   const [isDeletingList, setIsDeletingList] = useState(false);
   //starts as null, when user clicks set EditingId to the task's id
   const [editingId, setEditingId] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState([]);
 
   //starts as null then wehn user clicks the edit icon set taskDetailsId to the task's id
   const [taskDetailsId, setTaskDetailsId] = useState(null);
@@ -495,6 +496,7 @@ async function reorderTasks(draggedTaskId, targetTaskId) {
 
               <div className="task-panel">
                 <SearchBar
+                  key={currentList?._id}
                   lists={lists}
                   removeTask={deleteTask}
                   taskData={currentTasks}
@@ -510,6 +512,8 @@ async function reorderTasks(draggedTaskId, targetTaskId) {
                      reorderTasks={reorderTasks}
                     removeTask={deleteTask}
                     updateTask={updateOneTask}
+                    selectedTaskId={selectedTaskId}
+                    setSelectedTaskId={setSelectedTaskId}
                     archiveTask={archiveTask}
                     editingId={editingId}
                     setEditingId={setEditingId}

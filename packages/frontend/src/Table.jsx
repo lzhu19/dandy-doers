@@ -4,10 +4,8 @@ import { useRef, useState } from 'react';
 function TableHeader() {
   return (
     <thead>
-      <tr>
-        <th>Task</th>
-        <th>ID</th>
-      </tr>
+      <th>Task</th>
+      <th>ID</th>
     </thead>
   );
 }
@@ -154,7 +152,13 @@ function TableBody(props) {
 function Table(props) {
   return (
     <table>
-      <TableHeader />
+      <TableHeader
+        taskData={props.taskData}
+        selectedTaskId={props.selectedTaskId}
+        setSelectedTaskId={props.setSelectedTaskId}
+        removeTask={props.removeTask}
+        archiveTask={props.archiveTask}
+      />
       <TableBody
         taskData={props.taskData}
          reorderTasks={props.reorderTasks}
@@ -162,6 +166,8 @@ function Table(props) {
         archiveTask={props.archiveTask}
         //deleteTask={props.deleteTask}
         updateTask={props.updateTask}
+        selectedTaskId={props.selectedTaskId}
+        setSelectedTaskId={props.setSelectedTaskId}
         editingId={props.editingId}
         setEditingId={props.setEditingId}
         setTaskDetailsId={props.setTaskDetailsId}
