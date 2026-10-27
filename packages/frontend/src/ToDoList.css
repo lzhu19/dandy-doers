@@ -4,6 +4,20 @@
   background: #fffbf2;
 }
 
+tr.drop-target td {
+  border-top: 3px solid #383041;
+}
+
+.bottom-drop-zone td {
+  height: 8px;
+  padding: 0;
+  border: none;
+}
+
+.bottom-drop-zone.drop-target td {
+  border-top: 3px solid #383041;
+}
+
 .sidebar {
   width: 388px;
   flex-shrink: 0;
