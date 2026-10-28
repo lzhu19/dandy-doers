@@ -5,6 +5,11 @@ function TaskDetails(props) {
   const [name, setName] = useState(props.task.name);
   const [notes, setNotes] = useState(props.task.notes ?? '');
 
+  function handleSave() {
+    if (!name.trim()) return;
+    props.saveTaskDetails(props.task._id, { name, notes });
+  }
+
   return (
     <div className="task-details-bg" onClick={props.closeTaskDetails}>
       <section
@@ -31,7 +36,11 @@ function TaskDetails(props) {
             >
               Cancel
             </button>
-            <button className="add-task-button task-details-save" type="button">
+            <button
+              className="add-task-button task-details-save"
+              type="button"
+              onClick={handleSave}
+            >
               Save
             </button>
           </div>

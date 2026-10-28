@@ -253,18 +253,18 @@ describe('addTask', () => {
 
 describe('updateTask', () => {
   it('updates and returns the task name', async () => {
-    const updatedName = 'Updated task name';
+    const updatedNotes = 'Bring a scantron';
     const updatedTask = {
       ...sampleTask,
-      name: updatedName,
+      notes: updatedNotes,
     };
 
     mockingoose(Task).toReturn(sampleTask, 'findOne');
     mockingoose(Task).toReturn(updatedTask, 'save');
 
-    const task = await updateTask(taskId, { name: updatedName });
+    const task = await updateTask(taskId, { notes: updatedNotes });
 
-    expect(task.name).toBe(updatedName);
+    expect(task.notes).toBe(updatedNotes);
     expect(task._id.toString()).toBe(taskId);
   });
 

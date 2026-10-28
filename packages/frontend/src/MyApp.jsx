@@ -318,6 +318,35 @@ function MyApp() {
       });
   }
 
+  //
+  function updateTaskDetails(id, updatedFields) {
+    // updates a task's name and notes for given id
+    const promise = fetch(`http://localhost:8000/tasks/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-type': 'application/json',
+      },
+      body: JSON.stringify(updatedFields),
+    });
+
+    promise
+      .then((response) => {
+        if (response.status === 200) return response.json();
+        return null;
+      })
+      .then((updatedTask) => {
+        if (updatedTask !== null) {
+          setTasks((currentTasks) =>
+            currentTasks.map((task) => (task._id === id ? updatedTask : task))
+          );
+          setTaskDetailsId(null);
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
   async function updateListName(id, newEdit) {
     const name = newEdit.trim();
     if (!name) {
@@ -685,6 +714,7 @@ function MyApp() {
       {taskDetails && (
         <TaskDetails
           task={taskDetails}
+          saveTaskDetails={updateTaskDetails}
           closeTaskDetails={() => setTaskDetailsId(null)}
         />
       )}
