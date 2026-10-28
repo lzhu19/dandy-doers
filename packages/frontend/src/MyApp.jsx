@@ -478,7 +478,6 @@ function MyApp() {
           </div>
 
           <div>
-            <h2 className="sidebar-section-title">Lists</h2>
             <ListSection
               lists={lists}
               selectedListId={currentList?._id}

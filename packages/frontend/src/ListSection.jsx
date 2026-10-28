@@ -1,7 +1,7 @@
 function ListSection({ lists, selectedListId, onSelectList }) {
   return (
     <details className="lists-section">
-      <summary>My Lists</summary>
+      <summary className="sidebar-section-title">Lists</summary>
       <ul>
         {lists.map((list) => (
           <li className="user-list" key={list._id}>

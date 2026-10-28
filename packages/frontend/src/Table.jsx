@@ -4,7 +4,7 @@ function TableHeader() {
   return (
     <thead>
       <th>Task</th>
-      <th>ID</th>
+      <th></th>
     </thead>
   );
 }
@@ -81,9 +81,7 @@ function TableBody(props) {
           })()}
         </td>
 
-        <td>{row._id}</td>
-
-        <td>
+        <td className="task-actions-cell">
           <div className="task-actions">
             <button
               className="edit-icon-button"
@@ -141,7 +139,7 @@ function TableBody(props) {
         setDropTargetId(null);
       }}
     >
-      <td colSpan="3"></td>
+      <td colSpan="2"></td>
     </tr>
   );
 

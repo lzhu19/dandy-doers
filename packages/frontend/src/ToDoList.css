@@ -45,6 +45,61 @@ tr.drop-target td {
   margin: 0 0 15px 0;
 }
 
+.sidebar .lists-section {
+  margin-top: 0;
+}
+
+.lists-section summary {
+  cursor: pointer;
+}
+
+.lists-section ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.user-list-select {
+  display: inline-block;
+  max-width: 100%;
+  padding: 10px 20px;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 10px;
+  background: #594b65;
+  color: #fffbf2;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 0.25px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.user-list-select:focus {
+  background: #594b65;
+  color: #fffbf2;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.user-list-select:hover {
+  background: #4b3f56;
+  color: #fffbf2;
+}
+
+.user-list-select:active {
+  background: #292230;
+  color: #fffbf2;
+}
+
+.user-list-select:focus-visible {
+  outline: 2px solid #ffdf8c;
+  outline-offset: 2px;
+}
+
 .upcoming-box {
   width: 294px;
   height: 269px;
@@ -82,6 +137,7 @@ tr.drop-target td {
   display: flex;
   width: 261px;
   padding: 12px;
+  margin-top: 20px;
   justify-content: center;
   align-items: center;
   gap: 14px;
@@ -260,6 +316,13 @@ tr.drop-target td {
   align-items: center;
   gap: 10px;
 }
+
+.task-actions-cell {
+  width: 1%;
+  white-space: nowrap;
+  padding-right: 16px;
+}
+
 .archive-icon-button,
 .delete-icon-button,
 .edit-icon-button,
@@ -338,7 +401,7 @@ tr.drop-target td {
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 400;
   letter-spacing: 0.25px;
   cursor: pointer;
