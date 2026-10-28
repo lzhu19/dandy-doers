@@ -25,7 +25,7 @@
     "dev-backend": "npm run dev --workspace=backend",
     "test-frontend": "npm run test --workspace=frontend",
     "test:coverage-frontend": "npm run test:coverage --workspace=frontend",
-    "test:coverage-backend": "npm run test:coverage --workspace=frontend",
+    "test:coverage-backend": "npm run test:coverage --workspace=backend",
     "test-backend": "npm run test --workspace=backend",
     "preview": "vite preview",
     "format": "prettier --write './**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc",
