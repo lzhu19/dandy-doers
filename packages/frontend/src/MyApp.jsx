@@ -6,7 +6,6 @@ import ArchiveList from './ArchiveList';
 import DeleteList from './DeleteList';
 import ListSection from './ListSection';
 import SearchBar from './SearchBar';
-import TaskDetails from './TaskDetails';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
@@ -22,13 +21,10 @@ function MyApp() {
   //starts as null, when user clicks set EditingId to the task's id
   const [editingId, setEditingId] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState([]);
-
-  //starts as null then wehn user clicks the edit icon set taskDetailsId to the task's id
-  const [taskDetailsId, setTaskDetailsId] = useState(null);
-
   const [archivedTasks, setArchivedTasks] = useState([]);
-
   const [deletedTasks, setDeletedTasks] = useState([]);
+  const [targetListId, setTargetListId] = useState('');
+  const [isMoveTaskOpen, setIsMoveTaskOpen] = useState(false);
 
   function fetchTasks() {
     const promise = fetch('http://localhost:8000/tasks');
@@ -280,6 +276,35 @@ function MyApp() {
       });
   }
 
+  function moveTaskToList(id, targetListId) {
+  if (!currentList || !targetListId) return;
+
+  return fetch(`http://localhost:8000/tasks/${id}/move`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ listId: targetListId }),
+  })
+    .then((response) => {
+      if (response.status !== 200) {
+        throw new Error(`Unable to move task to a different list (${response.status}).`);
+      }
+
+      setTasks((previous) => previous.map((task) => {
+        if (task._id === id) {
+          return { ...task, listId: targetListId };
+        } else {
+          return task;
+        }
+   })
+);
+      setSelectedTaskId((previous) => previous.filter((taskId) => taskId !== id));
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
   ///
   function updateOneTask(id, newEdit) {
     // updates a task's name for given id
@@ -377,67 +402,6 @@ function MyApp() {
     (task) => String(task.listId) === String(currentList?._id)
   );
 
-async function reorderTasks(draggedTaskId, targetTaskId) {
-  if (!currentList) return;
-
-  
-  const listTasks = tasks.filter(
-    (task) => String(task.listId) === String(currentList._id)
-  );
-
-  const reordered = [...listTasks];
-
-  const draggedIndex = reordered.findIndex(
-    (task) => task._id === draggedTaskId
-  );
-
-  const targetIndex = reordered.findIndex(
-    (task) => task._id === targetTaskId
-  );
-
-  
-  if (draggedIndex === -1 || targetIndex === -1) return;
-
-  
-  const [draggedItem] = reordered.splice(draggedIndex, 1);
-
-  
-  reordered.splice(targetIndex, 0, draggedItem);
-
- 
-  setTasks((allTasks) => {
-    const otherTasks = allTasks.filter(
-      (task) => String(task.listId) !== String(currentList._id)
-    );
-
-    return [...otherTasks, ...reordered];
-  });
-
- 
-  try {
-    const response = await fetch(
-      `http://localhost:8000/lists/${currentList._id}/reorder-tasks`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          taskIds: reordered.map((task) => task._id),
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Unable to save task order (${response.status}).`);
-    }
-
-    console.log('Task order saved successfully!');
-  } catch (error) {
-    console.error('Could not save task order:', error);
-  }
-}
-
   return (
     <>
       <div className="main-layout">
@@ -496,7 +460,7 @@ async function reorderTasks(draggedTaskId, targetTaskId) {
 
               <div className="task-panel">
                 <SearchBar
-                  key={currentList?._id}
+                  key={selectedListId}
                   lists={lists}
                   removeTask={deleteTask}
                   taskData={currentTasks}
@@ -508,8 +472,9 @@ async function reorderTasks(draggedTaskId, targetTaskId) {
                   </p>
                 ) : (
                   <Table
+                    isMoveTaskOpen={isMoveTaskOpen}
+                    setIsMoveTaskOpen={setIsMoveTaskOpen}
                     taskData={currentTasks}
-                     reorderTasks={reorderTasks}
                     removeTask={deleteTask}
                     updateTask={updateOneTask}
                     selectedTaskId={selectedTaskId}
@@ -517,7 +482,9 @@ async function reorderTasks(draggedTaskId, targetTaskId) {
                     archiveTask={archiveTask}
                     editingId={editingId}
                     setEditingId={setEditingId}
-                    setTaskDetailsId={setTaskDetailsId}
+                    lists={lists}
+                    selectedListId={selectedListId}
+                    moveTaskToList={moveTaskToList}
                   />
                 )}
                 <Form handleSubmit={updateList} />
@@ -626,13 +593,9 @@ async function reorderTasks(draggedTaskId, targetTaskId) {
           </section>
         </div>
       )}
-      {taskDetailsId && (
-        <TaskDetails closeTaskDetails={() => setTaskDetailsId(null)} />
-      )}
     </>
   );
 }
-
 
 function TrashIcon() {
   return (

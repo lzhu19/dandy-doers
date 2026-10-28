@@ -476,3 +476,10 @@ tr.drop-target td {
   border: none;
   background: #ece0c9;
 }
+
+.bulk-select-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 6px;
+}
