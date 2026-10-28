@@ -10,14 +10,13 @@ function getTasks(name) {
   return promise;
 }
 
-
 async function reorderTasks(listId, taskIds) {
   // Find all tasks in the specified list
   const tasks = await taskModel.find({
-  listId: listId,
-  archived: false,
-  deleted: false,
-});
+    listId: listId,
+    archived: false,
+    deleted: false,
+  });
 
   // Verify that the submitted IDs represent every task in the list
   const existingIds = tasks.map((task) => task._id.toString());
@@ -28,7 +27,9 @@ async function reorderTasks(listId, taskIds) {
     !existingIds.every((id) => submittedIds.includes(id)) ||
     new Set(submittedIds).size !== submittedIds.length
   ) {
-    throw new Error('Task IDs must represent every task in the list exactly once.');
+    throw new Error(
+      'Task IDs must represent every task in the list exactly once.'
+    );
   }
 
   // Create an update operation for each task
@@ -50,7 +51,6 @@ async function reorderTasks(listId, taskIds) {
   // Return the tasks in their new order
   return taskModel.find({ listId: listId }).sort({ position: 1 });
 }
-
 
 function findTaskById(id) {
   // /tasks/<id>
@@ -74,6 +74,15 @@ function updateTask(id, updatedFields) {
   return taskModel.findById(id).then((task) => {
     if (!task) return null;
     task.name = updatedFields.name;
+    return task.save();
+  });
+}
+
+//finds a task by id & updates its listid, then saves the change
+function updateTaskListId(id, targetListId) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.listId = targetListId;
     return task.save();
   });
 }
@@ -136,4 +145,5 @@ export {
   restoreArchivedTask,
   restoreDeletedTask,
   getDeletedTasks,
+  updateTaskListId,
 };
