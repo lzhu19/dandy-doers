@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 
-
 function TableHeader() {
   return (
     <thead>
@@ -18,51 +17,51 @@ function TableBody(props) {
     const isEditing = props.editingId === row._id;
 
     return (
-   <tr
-  key={row._id}
-  className={dropTargetId === row._id ? 'drop-target' : ''}
-  draggable={true}
-  onDragStart={(event) => {
-  draggedTaskId.current = row._id;
-  event.dataTransfer.effectAllowed = 'move';
+      <tr
+        key={row._id}
+        className={dropTargetId === row._id ? 'drop-target' : ''}
+        draggable={true}
+        onDragStart={(event) => {
+          draggedTaskId.current = row._id;
+          event.dataTransfer.effectAllowed = 'move';
 
-  // Use only the task row as the drag preview
-  event.dataTransfer.setDragImage(
-    event.currentTarget,
-    event.nativeEvent.offsetX,
-    event.nativeEvent.offsetY
-  );
+          // Use only the task row as the drag preview
+          event.dataTransfer.setDragImage(
+            event.currentTarget,
+            event.nativeEvent.offsetX,
+            event.nativeEvent.offsetY
+          );
 
-  event.currentTarget.classList.add('dragging');
-}}
-  onDragEnd={(event) => {
-  event.currentTarget.classList.remove('dragging');
-  draggedTaskId.current = null;
-  setDropTargetId(null);
-}}
-  onDragOver={(event) => {
-  event.preventDefault();
-  event.dataTransfer.dropEffect = 'move';
+          event.currentTarget.classList.add('dragging');
+        }}
+        onDragEnd={(event) => {
+          event.currentTarget.classList.remove('dragging');
+          draggedTaskId.current = null;
+          setDropTargetId(null);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
 
-  if (draggedTaskId.current !== row._id) {
-    setDropTargetId(row._id);
-  }
-}}
-  onDrop={(event) => {
-  event.preventDefault();
-  event.stopPropagation();
+          if (draggedTaskId.current !== row._id) {
+            setDropTargetId(row._id);
+          }
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
 
-  const draggedId = draggedTaskId.current;
-  const targetTaskId = row._id;
+          const draggedId = draggedTaskId.current;
+          const targetTaskId = row._id;
 
-  if (draggedId && draggedId !== targetTaskId) {
-    props.reorderTasks(draggedId, targetTaskId);
-  }
+          if (draggedId && draggedId !== targetTaskId) {
+            props.reorderTasks(draggedId, targetTaskId);
+          }
 
-  draggedTaskId.current = null;
-  setDropTargetId(null);
-}}
->
+          draggedTaskId.current = null;
+          setDropTargetId(null);
+        }}
+      >
         <td onClick={() => props.setEditingId(row._id)}>
           {(() => {
             if (isEditing) {
@@ -116,37 +115,42 @@ function TableBody(props) {
   });
 
   const bottomDropZone = (
-  <tr
-    className={`bottom-drop-zone ${
-      dropTargetId === 'bottom' ? 'drop-target' : ''
-    }`}
-    onDragOver={(event) => {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = 'move';
-      setDropTargetId('bottom');
-    }}
-    onDrop={(event) => {
-      event.preventDefault();
-      event.stopPropagation();
+    <tr
+      className={`bottom-drop-zone ${
+        dropTargetId === 'bottom' ? 'drop-target' : ''
+      }`}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        setDropTargetId('bottom');
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-      const draggedId = draggedTaskId.current;
+        const draggedId = draggedTaskId.current;
 
-      if (draggedId) {
-        props.reorderTasks(
-          draggedId,
-          props.taskData[props.taskData.length - 1]?._id
-        );
-      }
+        if (draggedId) {
+          props.reorderTasks(
+            draggedId,
+            props.taskData[props.taskData.length - 1]?._id
+          );
+        }
 
-      draggedTaskId.current = null;
-      setDropTargetId(null);
-    }}
-  >
-    <td colSpan="3"></td>
-  </tr>
-);
+        draggedTaskId.current = null;
+        setDropTargetId(null);
+      }}
+    >
+      <td colSpan="3"></td>
+    </tr>
+  );
 
-  return <tbody>{rows}{bottomDropZone}</tbody>;
+  return (
+    <tbody>
+      {rows}
+      {bottomDropZone}
+    </tbody>
+  );
 }
 
 function Table(props) {
@@ -161,7 +165,7 @@ function Table(props) {
       />
       <TableBody
         taskData={props.taskData}
-         reorderTasks={props.reorderTasks}
+        reorderTasks={props.reorderTasks}
         removeTask={props.removeTask}
         archiveTask={props.archiveTask}
         //deleteTask={props.deleteTask}

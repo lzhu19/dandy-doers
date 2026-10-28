@@ -286,61 +286,55 @@ describe('DELETE /tasks/:id', () => {
 });
 
 describe('PUT /lists//reorder-tasks', () => {
-it('reorders the tasks and returns them', async () => {
-const reorderedTasks = [
-{ _id: 'task-2', name: 'Second task', position: 0 },
-{ _id: 'task-1', name: 'First task', position: 1 },
-];
+  it('reorders the tasks and returns them', async () => {
+    const reorderedTasks = [
+      { _id: 'task-2', name: 'Second task', position: 0 },
+      { _id: 'task-1', name: 'First task', position: 1 },
+    ];
 
-reorderTasks.mockResolvedValueOnce(reorderedTasks);
+    reorderTasks.mockResolvedValueOnce(reorderedTasks);
 
-const response = await request(app)
-  .put('/lists/list-1/reorder-tasks')
-  .send({ taskIds: ['task-2', 'task-1'] });
+    const response = await request(app)
+      .put('/lists/list-1/reorder-tasks')
+      .send({ taskIds: ['task-2', 'task-1'] });
 
-expect(reorderTasks).toHaveBeenCalledWith('list-1', [
-  'task-2',
-  'task-1',
-]);
-expect(response.status).toBe(200);
-expect(response.body).toEqual(reorderedTasks);
+    expect(reorderTasks).toHaveBeenCalledWith('list-1', ['task-2', 'task-1']);
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(reorderedTasks);
+  });
 
+  it('returns 400 when taskIds is not an array', async () => {
+    const response = await request(app)
+      .put('/lists/list-1/reorder-tasks')
+      .send({ taskIds: 'task-1' });
+
+    expect(reorderTasks).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    expect(response.text).toBe('taskIds must be an array.');
+  });
+
+  it('logs the service error and returns 500 when reordering fails', async () => {
+    const error = new Error('Database unavailable');
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    reorderTasks.mockRejectedValueOnce(error);
+
+    const response = await request(app)
+      .put('/lists/list-1/reorder-tasks')
+      .send({ taskIds: ['task-1', 'task-2'] });
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Could not reorder tasks:',
+      error
+    );
+    expect(response.status).toBe(500);
+    expect(response.text).toBe('Could not reorder tasks.');
+
+    consoleErrorSpy.mockRestore();
+  });
 });
-
-it('returns 400 when taskIds is not an array', async () => {
-const response = await request(app)
-.put('/lists/list-1/reorder-tasks')
-.send({ taskIds: 'task-1' });
-
-expect(reorderTasks).not.toHaveBeenCalled();
-expect(response.status).toBe(400);
-expect(response.text).toBe('taskIds must be an array.');
-
-});
-
-it('logs the service error and returns 500 when reordering fails', async () => {
-const error = new Error('Database unavailable');
-const consoleErrorSpy = jest
-.spyOn(console, 'error')
-.mockImplementation(() => {});
-
-reorderTasks.mockRejectedValueOnce(error);
-
-const response = await request(app)
-  .put('/lists/list-1/reorder-tasks')
-  .send({ taskIds: ['task-1', 'task-2'] });
-
-expect(consoleErrorSpy).toHaveBeenCalledWith(
-  'Could not reorder tasks:',
-  error
-);
-expect(response.status).toBe(500);
-expect(response.text).toBe('Could not reorder tasks.');
-
-consoleErrorSpy.mockRestore();
-});
-});
-
 
 describe('PUT /tasks/:id', () => {
   it('updates and returns the task', async () => {
@@ -421,7 +415,6 @@ describe('PUT /tasks/:id/archive', () => {
     );
   });
 });
-
 
 describe('PUT /tasks/:id/restore-archived', () => {
   it('restores and returns the archived task', async () => {

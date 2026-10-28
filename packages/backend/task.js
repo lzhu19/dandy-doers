@@ -21,8 +21,8 @@ const TaskSchema = new mongoose.Schema(
       default: false,
     },
     position: {
-    type: Number,
-    default: 0,
+      type: Number,
+      default: 0,
     },
   },
   { collection: 'tasks_list' }

@@ -1086,7 +1086,6 @@ describe('reorderTasks', () => {
   });
 });
 
-
 describe('editListName', () => {
   it('renames the selected list when its name is edited', async () => {
     const user = userEvent.setup();
@@ -1116,8 +1115,7 @@ describe('editListName', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () =>
-            Promise.resolve({ _id: 'list-123', name: body.name }),
+          json: () => Promise.resolve({ _id: 'list-123', name: body.name }),
         });
       }
 
@@ -1127,13 +1125,17 @@ describe('editListName', () => {
     render(<MyApp />);
 
     const listHeading = await screen.findByRole('heading', { name: 'School' });
-    await user.click(within(listHeading).getByRole('button', { name: 'School' }));
+    await user.click(
+      within(listHeading).getByRole('button', { name: 'School' })
+    );
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
     await user.clear(renameInput);
     await user.type(renameInput, 'Classes');
     await user.click(document.body);
 
-    expect(await screen.findByRole('heading', { name: 'Classes' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Classes' })
+    ).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:8000/lists/list-123',
       expect.objectContaining({
