@@ -409,6 +409,9 @@ function MyApp() {
     (task) => String(task.listId) === String(currentList?._id)
   );
 
+  //finds the task of which edit icon was clicked
+  const taskDetails = tasks.find((task) => task._id === taskDetailsId);
+
   async function reorderTasks(draggedTaskId, targetTaskId) {
     if (!currentList) return;
 
@@ -679,8 +682,11 @@ function MyApp() {
           </section>
         </div>
       )}
-      {taskDetailsId && (
-        <TaskDetails closeTaskDetails={() => setTaskDetailsId(null)} />
+      {taskDetails && (
+        <TaskDetails
+          task={taskDetails}
+          closeTaskDetails={() => setTaskDetailsId(null)}
+        />
       )}
     </>
   );
