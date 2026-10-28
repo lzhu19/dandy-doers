@@ -73,7 +73,8 @@ function addTask(task) {
 function updateTask(id, updatedFields) {
   return taskModel.findById(id).then((task) => {
     if (!task) return null;
-    task.name = updatedFields.name;
+    if (updatedFields.name !== undefined) task.name = updatedFields.name;
+    if (updatedFields.notes !== undefined) task.notes = updatedFields.notes;
     return task.save();
   });
 }

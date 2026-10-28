@@ -1,4 +1,15 @@
+import { useState } from 'react';
+
 function TaskDetails(props) {
+  //start w/ clicked task's current vals
+  const [name, setName] = useState(props.task.name);
+  const [notes, setNotes] = useState(props.task.notes ?? '');
+
+  function handleSave() {
+    if (!name.trim()) return;
+    props.saveTaskDetails(props.task._id, { name, notes });
+  }
+
   return (
     <div className="task-details-bg" onClick={props.closeTaskDetails}>
       <section
@@ -25,12 +36,41 @@ function TaskDetails(props) {
             >
               Cancel
             </button>
-            <button className="add-task-button task-details-save" type="button">
+            <button
+              className="add-task-button task-details-save"
+              type="button"
+              onClick={handleSave}
+            >
               Save
             </button>
           </div>
         </div>
         <hr className="task-details-divider" />
+
+        <div className="task-details-body">
+          <label className="task-details-label" htmlFor="task-details-name">
+            Task
+          </label>
+          <input
+            className="task-details-input"
+            type="text"
+            id="task-details-name"
+            name="name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+
+          <label className="task-details-label" htmlFor="task-details-notes">
+            Notes
+          </label>
+          <textarea
+            className="task-details-textarea"
+            id="task-details-notes"
+            name="notes"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+          />
+        </div>
       </section>
     </div>
   );

@@ -7,6 +7,10 @@ const TaskSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    notes: {
+      type: String,
+      default: '',
+    },
     listId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'List',
