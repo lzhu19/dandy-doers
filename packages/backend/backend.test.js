@@ -312,6 +312,14 @@ describe('PUT /lists//reorder-tasks', () => {
     expect(response.text).toBe('taskIds must be an array.');
   });
 
+  it('returns 400 when the request body is missing', async () => {
+    const response = await request(app).put('/lists/list-1/reorder-tasks');
+
+    expect(reorderTasks).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    expect(response.text).toBe('taskIds must be an array.');
+  });
+
   it('logs the service error and returns 500 when reordering fails', async () => {
     const error = new Error('Database unavailable');
     const consoleErrorSpy = jest
