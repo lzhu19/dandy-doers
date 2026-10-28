@@ -175,7 +175,13 @@ describe('POST /tasks', () => {
 
   it('creates and returns a task', async () => {
     const list = { _id: listId };
-    const task = { _id: 'task-1', name: 'Write tests', listId };
+    const task = {
+      _id: 'task-1',
+      name: 'Write tests',
+      listId,
+      createdAt: '2026-10-28T06:00:00.000Z',
+      updatedAt: '2026-10-28T06:00:00.000Z',
+    };
     findListById.mockResolvedValueOnce(list);
     addTask.mockResolvedValueOnce(task);
 
@@ -187,6 +193,8 @@ describe('POST /tasks', () => {
     expect(addTask).toHaveBeenCalledWith({ name: 'Write tests', listId });
     expect(response.status).toBe(201);
     expect(response.body).toEqual(task);
+    expect(response.body.createdAt).toBe(task.createdAt);
+    expect(response.body.updatedAt).toBe(task.updatedAt);
   });
 
   it.each([
