@@ -1086,6 +1086,64 @@ describe('reorderTasks', () => {
   });
 });
 
+
+describe('editListName', () => {
+  it('renames the selected list when its name is edited', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([{ _id: 'list-123', name: 'School' }]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([]),
+        });
+      }
+
+      if (
+        url === 'http://localhost:8000/lists/list-123' &&
+        options.method === 'PUT'
+      ) {
+        const body = JSON.parse(options.body);
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({ _id: 'list-123', name: body.name }),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+
+    const listHeading = await screen.findByRole('heading', { name: 'School' });
+    await user.click(within(listHeading).getByRole('button', { name: 'School' }));
+    const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
+    await user.clear(renameInput);
+    await user.type(renameInput, 'Classes');
+    await user.click(document.body);
+
+    expect(await screen.findByRole('heading', { name: 'Classes' })).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/lists/list-123',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ name: 'Classes' }),
+      })
+    );
+  });
+});
+
 //Tests list switching
 describe('switch lists', () => {
   it('displays the tasks for the selected list', async () => {
