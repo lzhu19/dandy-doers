@@ -21,6 +21,67 @@ import MyApp from './MyApp';
 import Form from './Form';
 import ArchiveList from './ArchiveList';
 import DeleteList from './DeleteList';
+import Table from './Table';
+import TaskDetails from './TaskDetails';
+
+const list = { _id: 'list-1', name: 'School' };
+const activeTask = {
+  _id: 'task-1',
+  name: 'Homework',
+  listId: list._id,
+};
+const archivedTask = {
+  _id: 'task-2',
+  name: 'Archived homework',
+  listId: list._id,
+  archived: true,
+};
+const deletedTask = {
+  _id: 'task-3',
+  name: 'Deleted homework',
+  listId: list._id,
+  deleted: true,
+};
+
+function jsonResponse(data, status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: vi.fn().mockResolvedValue(data),
+  };
+}
+
+function installApi({ tasks = [], lists = [list] } = {}) {
+  const routes = new Map();
+  const fetchMock = vi.fn(async (url, options = {}) => {
+    const method = options.method ?? 'GET';
+    const route = routes.get(`${method} ${url}`);
+    if (route) return route();
+
+    if (url === 'http://localhost:8000/tasks' && method === 'GET') {
+      return jsonResponse(tasks);
+    }
+    if (url === 'http://localhost:8000/lists' && method === 'GET') {
+      return jsonResponse(lists);
+    }
+    throw new Error(`Unexpected fetch request: ${method} ${url}`);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return { routes, fetchMock };
+}
+
+async function openApp() {
+  render(<MyApp />);
+  await screen.findByRole('heading', { name: list.name });
+}
+
+async function openArchivedSection(user) {
+  await user.click(screen.getByText('Archived Tasks'));
+}
+
+async function openDeletedSection(user) {
+  await user.click(screen.getByText('Deleted Tasks'));
+}
 
 //what happens before each test (mocks)
 beforeAll(() => {
@@ -1084,6 +1145,74 @@ describe('reorderTasks', () => {
       ).toEqual(['Homework 2', 'Homework 1', 'Homework 3']);
     });
   });
+
+  it('saves edits and reorders while preserving other tasks', async () => {
+    const user = userEvent.setup();
+    const secondTask = { _id: 'task-4', name: 'Essay', listId: list._id };
+    const { routes } = installApi({ tasks: [activeTask, secondTask] });
+    routes.set('PUT http://localhost:8000/tasks/task-1', async () =>
+      jsonResponse({ ...activeTask, name: 'Updated homework' })
+    );
+    routes.set(
+      'PUT http://localhost:8000/lists/list-1/reorder-tasks',
+      async () => jsonResponse({})
+    );
+
+    await openApp();
+    await user.click(screen.getByRole('cell', { name: 'Homework' }));
+    fireEvent.blur(screen.getByDisplayValue('Homework'), {
+      target: { value: 'Updated homework' },
+    });
+    expect(
+      await screen.findByRole('cell', { name: 'Updated homework' })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Essay' })).toBeInTheDocument();
+
+    const rows = document.querySelectorAll('tbody tr[draggable="true"]');
+    const dataTransfer = { setDragImage: vi.fn() };
+    fireEvent.dragStart(rows[0], { dataTransfer });
+    fireEvent.drop(rows[1], { dataTransfer });
+
+    await waitFor(() => {
+      expect(
+        routes.has('PUT http://localhost:8000/lists/list-1/reorder-tasks')
+      ).toBe(true);
+    });
+    expect(
+      await screen.findAllByRole('cell', { name: /Updated homework|Essay/ })
+    ).toHaveLength(2);
+  });
+
+  it('reports an unsuccessful task reorder request', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const secondTask = { _id: 'task-4', name: 'Essay', listId: list._id };
+    const { routes, fetchMock } = installApi({
+      tasks: [activeTask, secondTask],
+    });
+    routes.set(
+      'PUT http://localhost:8000/lists/list-1/reorder-tasks',
+      async () => jsonResponse({}, 503)
+    );
+
+    await openApp();
+    const rows = document.querySelectorAll('tbody tr[draggable="true"]');
+    const dataTransfer = { setDragImage: vi.fn() };
+    fireEvent.dragStart(rows[0], { dataTransfer });
+    fireEvent.drop(rows[1], { dataTransfer });
+
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalledWith(
+        'Could not save task order:',
+        expect.objectContaining({
+          message: 'Unable to save task order (503).',
+        })
+      );
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8000/lists/list-1/reorder-tasks',
+      expect.objectContaining({ method: 'PUT' })
+    );
+  });
 });
 
 describe('editListName', () => {
@@ -1143,6 +1272,131 @@ describe('editListName', () => {
         body: JSON.stringify({ name: 'Classes' }),
       })
     );
+  });
+});
+
+describe('list dialog workflows', () => {
+  it('removes all tasks belonging to a deleted list and selects another list', async () => {
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const { routes } = installApi({
+      tasks: [
+        activeTask,
+        archivedTask,
+        deletedTask,
+        { _id: 'task-4', name: 'Work task', listId: secondList._id },
+      ],
+      lists: [list, secondList],
+    });
+    routes.set('DELETE http://localhost:8000/lists/list-1', async () =>
+      jsonResponse({}, 204)
+    );
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: 'Delete List' }));
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Permanently Delete',
+      })
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Work' })).toBeVisible();
+    expect(screen.getByRole('cell', { name: 'Work task' })).toBeInTheDocument();
+    expect(screen.queryByRole('cell', { name: 'Homework' })).toBeNull();
+    expect(screen.queryByText('Archived homework')).not.toBeInTheDocument();
+    expect(screen.queryByText('Deleted homework')).not.toBeInTheDocument();
+  });
+
+  it('validates, reports create failures, and closes the create dialog', async () => {
+    const user = userEvent.setup();
+    const { routes, fetchMock } = installApi();
+    routes.set('POST http://localhost:8000/lists', async () =>
+      jsonResponse({}, 503)
+    );
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: '+ Add List' }));
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter a list name.');
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      'http://localhost:8000/lists',
+      expect.objectContaining({ method: 'POST' })
+    );
+
+    await user.type(screen.getByLabelText('List name'), 'Other');
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to create list (503).'
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('reports delete failures and closes the confirmation dialog on cancel', async () => {
+    const user = userEvent.setup();
+    const { routes } = installApi();
+    routes.set('DELETE http://localhost:8000/lists/list-1', async () =>
+      jsonResponse({}, 500)
+    );
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: 'Delete List' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Permanently Delete' })
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to delete list (500).'
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('validates a blank rename and displays a failed rename response', async () => {
+    const user = userEvent.setup();
+    const { routes } = installApi();
+    routes.set('PUT http://localhost:8000/lists/list-1', async () =>
+      jsonResponse({}, 500)
+    );
+    await openApp();
+
+    await user.click(screen.getAllByRole('button', { name: 'School' })[1]);
+    const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
+    await user.clear(renameInput);
+    fireEvent.blur(renameInput);
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter a list name.');
+
+    await user.type(renameInput, 'New name');
+    fireEvent.blur(renameInput);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Unable to rename list (500).'
+    );
+  });
+
+  it('renames one list without changing the others', async () => {
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const renamedList = { ...list, name: 'Classes' };
+    const { routes } = installApi({ lists: [list, secondList] });
+    routes.set('PUT http://localhost:8000/lists/list-1', async () =>
+      jsonResponse(renamedList)
+    );
+    await openApp();
+
+    await user.click(screen.getAllByRole('button', { name: 'School' })[1]);
+    const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
+    await user.clear(renameInput);
+    await user.type(renameInput, renamedList.name);
+    fireEvent.blur(renameInput);
+
+    expect(
+      await within(document.querySelector('.main-header-row')).findByRole(
+        'button',
+        { name: renamedList.name }
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
   });
 });
 
@@ -1242,6 +1496,120 @@ describe('Form', () => {
     await user.click(screen.getByRole('button', { name: /add/i }));
 
     expect(handleSubmit).not.toHaveBeenCalled();
+  });
+
+  it('does not submit a blank task and clears a submitted task', async () => {
+    const user = userEvent.setup();
+    const handleSubmit = vi.fn();
+    render(<Form handleSubmit={handleSubmit} />);
+    const input = screen.getByLabelText('Task');
+
+    fireEvent.submit(input.closest('form'));
+    await user.type(input, '   ');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    expect(handleSubmit).not.toHaveBeenCalled();
+
+    await user.clear(input);
+    await user.type(input, 'Read chapter');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+
+    expect(handleSubmit).toHaveBeenCalledWith({ name: 'Read chapter' });
+    expect(input).toHaveValue('');
+  });
+});
+
+describe('Table interactions', () => {
+  it('supports task actions, inline editing, and drag-and-drop reorder', () => {
+    const props = {
+      taskData: [activeTask, { ...activeTask, _id: 'task-2', name: 'Essay' }],
+      reorderTasks: vi.fn(),
+      removeTask: vi.fn(),
+      updateTask: vi.fn(),
+      archiveTask: vi.fn(),
+      setEditingId: vi.fn(),
+      setTaskDetailsId: vi.fn(),
+    };
+    const { container, rerender } = render(<Table {...props} />);
+    fireEvent.click(screen.getByText('Homework'));
+    expect(props.setEditingId).toHaveBeenCalledWith('task-1');
+    rerender(<Table {...props} editingId="task-1" />);
+    fireEvent.blur(screen.getByDisplayValue('Homework'), {
+      target: { value: 'New homework' },
+    });
+    expect(props.updateTask).toHaveBeenCalledWith('task-1', 'New homework');
+
+    const rows = container.querySelectorAll('tbody tr[draggable="true"]');
+    const [firstRow, secondRow] = rows;
+    const dataTransfer = {
+      effectAllowed: '',
+      dropEffect: '',
+      setDragImage: vi.fn(),
+    };
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Open task details' })[0]
+    );
+    fireEvent.click(screen.getAllByRole('button', { name: 'Archive task' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Delete task' })[0]);
+    expect(props.setTaskDetailsId).toHaveBeenCalledWith('task-1');
+    expect(props.archiveTask).toHaveBeenCalledWith('task-1');
+    expect(props.removeTask).toHaveBeenCalledWith('task-1');
+
+    fireEvent.dragStart(firstRow, { dataTransfer });
+    fireEvent.dragOver(firstRow, { dataTransfer });
+    fireEvent.dragOver(secondRow, { dataTransfer });
+    expect(secondRow).toHaveClass('drop-target');
+    fireEvent.drop(secondRow, { dataTransfer });
+    expect(props.reorderTasks).toHaveBeenLastCalledWith('task-1', 'task-2');
+    fireEvent.dragEnd(firstRow, { dataTransfer });
+    expect(firstRow).not.toHaveClass('dragging');
+
+    fireEvent.dragStart(firstRow, { dataTransfer });
+    fireEvent.drop(firstRow, { dataTransfer });
+    expect(props.reorderTasks).toHaveBeenCalledTimes(1);
+
+    const bottomDropZone = container.querySelector('.bottom-drop-zone');
+    fireEvent.dragOver(bottomDropZone, { dataTransfer });
+    expect(bottomDropZone).toHaveClass('drop-target');
+    fireEvent.dragStart(firstRow, { dataTransfer });
+    fireEvent.dragOver(bottomDropZone, { dataTransfer });
+    fireEvent.drop(bottomDropZone, { dataTransfer });
+    expect(props.reorderTasks).toHaveBeenLastCalledWith('task-1', 'task-2');
+    fireEvent.drop(bottomDropZone, { dataTransfer });
+    expect(props.reorderTasks).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('TaskDetails component', () => {
+  it('rejects a blank name and saves edited name and notes', async () => {
+    const user = userEvent.setup();
+    const saveTaskDetails = vi.fn();
+    render(
+      <TaskDetails
+        task={{ ...activeTask, notes: null }}
+        saveTaskDetails={saveTaskDetails}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    const nameInput = screen.getByLabelText('Task');
+    const notesInput = screen.getByLabelText('Notes');
+    expect(notesInput).toHaveValue('');
+
+    await user.clear(nameInput);
+    await user.type(nameInput, '   ');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(saveTaskDetails).not.toHaveBeenCalled();
+
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Read chapter');
+    await user.type(notesInput, 'Pages 1-10');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveTaskDetails).toHaveBeenCalledWith('task-1', {
+      name: 'Read chapter',
+      notes: 'Pages 1-10',
+    });
   });
 });
 
@@ -2367,5 +2735,298 @@ describe('taskDetails', () => {
     expect(
       screen.queryByRole('dialog', { name: 'Task details' })
     ).toBeInTheDocument();
+  });
+
+  it('updates the task after successfully saving its details', async () => {
+    const user = userEvent.setup();
+    const updatedTask = {
+      _id: 'task-1',
+      name: 'Updated homework',
+      listId: 'list-1',
+      notes: 'Review notes',
+    };
+    const secondTask = { _id: 'task-4', name: 'Essay', listId: list._id };
+    const { routes, fetchMock } = installApi({
+      tasks: [activeTask, secondTask],
+    });
+    routes.set('PUT http://localhost:8000/tasks/task-1', async () =>
+      jsonResponse(updatedTask)
+    );
+
+    await openApp();
+    await user.click(
+      screen.getAllByRole('button', { name: 'Open task details' })[0]
+    );
+    const detailsDialog = screen.getByRole('dialog');
+    const nameInput = within(detailsDialog).getByLabelText('Task');
+    await user.clear(nameInput);
+    await user.type(nameInput, updatedTask.name);
+    await user.type(
+      within(detailsDialog).getByLabelText('Notes'),
+      updatedTask.notes
+    );
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(
+      await screen.findByRole('cell', { name: updatedTask.name })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Essay' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-1',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({
+          name: updatedTask.name,
+          notes: updatedTask.notes,
+        }),
+      })
+    );
+  });
+});
+
+describe('task request failures', () => {
+  it('removes a deleted task from active, archived, and deleted state after success', async () => {
+    const user = userEvent.setup();
+    const { routes } = installApi({
+      tasks: [activeTask, archivedTask, deletedTask],
+    });
+    routes.set('DELETE http://localhost:8000/tasks/task-3', async () =>
+      jsonResponse({}, 204)
+    );
+    await openApp();
+
+    await openDeletedSection(user);
+    await user.click(
+      within(screen.getByText('Deleted homework').closest('li')).getByRole(
+        'button',
+        { name: 'Permanently Delete' }
+      )
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Deleted homework')).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('cell', { name: 'Homework' })).toBeInTheDocument();
+    expect(screen.getByText('Archived homework')).toBeInTheDocument();
+  });
+
+  it('logs network errors from every task mutation handler', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const { routes } = installApi({
+      tasks: [activeTask, archivedTask, deletedTask],
+    });
+    const error = new Error('Request failed');
+    const failingRoutes = [
+      'PUT http://localhost:8000/tasks/task-1/archive',
+      'PUT http://localhost:8000/tasks/task-1/delete',
+      'PUT http://localhost:8000/tasks/task-2/restore-archived',
+      'PUT http://localhost:8000/tasks/task-2/delete',
+      'PUT http://localhost:8000/tasks/task-3/restore-deleted',
+      'DELETE http://localhost:8000/tasks/task-3',
+      'PUT http://localhost:8000/tasks/task-1',
+      'POST http://localhost:8000/tasks',
+    ];
+    failingRoutes.forEach((route) =>
+      routes.set(route, () => Promise.reject(error))
+    );
+
+    await openApp();
+    await user.click(screen.getByRole('button', { name: 'Archive task' }));
+    await waitFor(() => expect(console.log).toHaveBeenCalledWith(error));
+    await user.click(screen.getByRole('button', { name: 'Delete task' }));
+    await waitFor(() =>
+      expect(
+        console.log.mock.calls.filter(([logged]) => logged === error)
+      ).toHaveLength(2)
+    );
+
+    await openArchivedSection(user);
+    await user.click(
+      within(screen.getByText('Archived homework').closest('li')).getByRole(
+        'button',
+        { name: 'Restore' }
+      )
+    );
+    await waitFor(() =>
+      expect(
+        console.log.mock.calls.filter(([logged]) => logged === error)
+      ).toHaveLength(3)
+    );
+    await user.click(
+      within(screen.getByText('Archived homework').closest('li')).getByRole(
+        'button',
+        { name: 'Delete' }
+      )
+    );
+    await waitFor(() =>
+      expect(
+        console.log.mock.calls.filter(([logged]) => logged === error)
+      ).toHaveLength(4)
+    );
+
+    await openDeletedSection(user);
+    await user.click(
+      within(screen.getByText('Deleted homework').closest('li')).getByRole(
+        'button',
+        { name: 'Restore' }
+      )
+    );
+    await waitFor(() =>
+      expect(
+        console.log.mock.calls.filter(([logged]) => logged === error)
+      ).toHaveLength(5)
+    );
+    await user.click(
+      within(screen.getByText('Deleted homework').closest('li')).getByRole(
+        'button',
+        { name: 'Permanently Delete' }
+      )
+    );
+    await waitFor(() =>
+      expect(
+        console.log.mock.calls.filter(([logged]) => logged === error)
+      ).toHaveLength(6)
+    );
+
+    await user.click(screen.getByRole('cell', { name: 'Homework' }));
+    fireEvent.blur(screen.getByDisplayValue('Homework'), {
+      target: { value: 'Renamed' },
+    });
+    await waitFor(() =>
+      expect(
+        console.log.mock.calls.filter(([logged]) => logged === error)
+      ).toHaveLength(7)
+    );
+    await user.click(
+      screen.getAllByRole('button', { name: 'Open task details' })[0]
+    );
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(
+        console.log.mock.calls.filter(([logged]) => logged === error)
+      ).toHaveLength(9)
+    );
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await user.type(screen.getByLabelText('Task'), 'New task');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await waitFor(() =>
+      expect(
+        console.log.mock.calls.filter(([logged]) => logged === error)
+      ).toHaveLength(10)
+    );
+  });
+
+  it('keeps task lists stable when task actions receive unsuccessful responses', async () => {
+    const user = userEvent.setup();
+    const { routes, fetchMock } = installApi({
+      tasks: [activeTask, archivedTask, deletedTask],
+    });
+    routes.set('PUT http://localhost:8000/tasks/task-1/archive', async () =>
+      jsonResponse({}, 500)
+    );
+    routes.set('PUT http://localhost:8000/tasks/task-1/delete', async () =>
+      jsonResponse({}, 500)
+    );
+    routes.set(
+      'PUT http://localhost:8000/tasks/task-2/restore-archived',
+      async () => jsonResponse({}, 500)
+    );
+    routes.set(
+      'PUT http://localhost:8000/tasks/task-3/restore-deleted',
+      async () => jsonResponse({}, 500)
+    );
+    routes.set('DELETE http://localhost:8000/tasks/task-3', async () =>
+      jsonResponse({}, 500)
+    );
+    routes.set('PUT http://localhost:8000/tasks/task-1', async () =>
+      jsonResponse({}, 500)
+    );
+    routes.set('POST http://localhost:8000/tasks', async () =>
+      jsonResponse({}, 500)
+    );
+
+    await openApp();
+    await screen.findByRole('cell', { name: 'Homework' });
+    await user.click(screen.getByRole('button', { name: 'Archive task' }));
+    await user.click(screen.getByRole('button', { name: 'Delete task' }));
+
+    await openArchivedSection(user);
+    await user.click(
+      within(screen.getByText('Archived homework').closest('li')).getByRole(
+        'button',
+        { name: 'Restore' }
+      )
+    );
+
+    await openDeletedSection(user);
+    await user.click(
+      within(screen.getByText('Deleted homework').closest('li')).getByRole(
+        'button',
+        { name: 'Restore' }
+      )
+    );
+    await user.click(
+      within(screen.getByText('Deleted homework').closest('li')).getByRole(
+        'button',
+        { name: 'Permanently Delete' }
+      )
+    );
+
+    await user.click(screen.getByRole('cell', { name: 'Homework' }));
+    fireEvent.blur(screen.getByDisplayValue('Homework'), {
+      target: { value: 'Renamed' },
+    });
+    await user.click(
+      screen.getAllByRole('button', { name: 'Open task details' })[0]
+    );
+    await user.clear(screen.getByLabelText('Notes'));
+    await user.type(screen.getByLabelText('Notes'), 'Details');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.type(screen.getByLabelText('Task'), 'New task');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost:8000/tasks/task-1',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({ name: 'Renamed' }),
+        })
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost:8000/tasks/task-1',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({ name: 'Homework', notes: 'Details' }),
+        })
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost:8000/tasks',
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+    expect(
+      screen.getAllByRole('textbox').map((input) => input.value)
+    ).toContain('Renamed');
+  });
+
+  it('logs rejected task/list loading and mutation requests', async () => {
+    const { routes } = installApi({ tasks: [activeTask] });
+    const error = new Error('Network unavailable');
+    routes.set('GET http://localhost:8000/tasks', () => Promise.reject(error));
+    routes.set('GET http://localhost:8000/lists', async () =>
+      jsonResponse([], 503)
+    );
+    render(<MyApp />);
+    await waitFor(() => {
+      expect(console.log).toHaveBeenCalledWith(error);
+      expect(console.log).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Unable to retrieve lists: 503' })
+      );
+    });
   });
 });
