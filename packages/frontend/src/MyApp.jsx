@@ -19,6 +19,8 @@ function MyApp() {
   const [isDeleteListOpen, setIsDeleteListOpen] = useState(false);
   const [listDeleteError, setListDeleteError] = useState('');
   const [isDeletingList, setIsDeletingList] = useState(false);
+  const [editingListId, setEditingListId] = useState(null);
+  const [listRenameError, setListRenameError] = useState('');
   //starts as null, when user clicks set EditingId to the task's id
   const [editingId, setEditingId] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState([]);
@@ -316,6 +318,36 @@ function MyApp() {
       });
   }
 
+  async function updateListName(id, newEdit) {
+    const name = newEdit.trim();
+    if (!name) {
+      setListRenameError('Enter a list name.');
+      return;
+    }
+
+    setListRenameError('');
+    try {
+      const response = await fetch(`http://localhost:8000/lists/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name }),
+      });
+      if (response.status !== 200) {
+        throw new Error(`Unable to rename list (${response.status}).`);
+      }
+
+      const updatedList = await response.json();
+      setLists((currentLists) =>
+        currentLists.map((list) => (list._id === id ? updatedList : list))
+      );
+      setEditingListId(null);
+    } catch (error) {
+      setListRenameError(error.message);
+    }
+  }
+
   function updateList(job) {
     // updates the list of tasks if the form is submitted.
     // setTasks([...tasks, job]);
@@ -472,7 +504,35 @@ function MyApp() {
           ) : (
             <>
               <div className="main-header-row">
-                <h1 className="main-header-title">{currentList.name}</h1>
+                <h1 className="main-header-title">
+                  {editingListId === currentList._id ? (
+                    <input
+                      aria-label="Rename list"
+                      type="text"
+                      defaultValue={currentList.name}
+                      autoFocus
+                      onBlur={(event) =>
+                        updateListName(currentList._id, event.target.value)
+                      }
+                    />
+                  ) : (
+                    <button
+                      className="main-header-title-button"
+                      type="button"
+                      onClick={() => {
+                        setListRenameError('');
+                        setEditingListId(currentList._id);
+                      }}
+                    >
+                      {currentList.name}
+                    </button>
+                  )}
+                </h1>
+                {listRenameError && (
+                  <p className="list-create-error" role="alert">
+                    {listRenameError}
+                  </p>
+                )}
                 <button
                   className="delete-list-icon-button"
                   type="button"
