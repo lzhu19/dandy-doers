@@ -156,7 +156,7 @@ function MyApp() {
             currentTasks.filter((task) => task._id !== id)
           );
           setSelectedTaskId((previous) =>
-          previous.filter((taskId) => taskId !== id)
+            previous.filter((taskId) => taskId !== id)
           );
         }
       })
@@ -194,7 +194,7 @@ function MyApp() {
             currentTasks.filter((task) => task._id !== id)
           );
           setSelectedTaskId((previous) =>
-          previous.filter((taskId) => taskId !== id)
+            previous.filter((taskId) => taskId !== id)
           );
         }
       })
@@ -403,34 +403,39 @@ function MyApp() {
   }
 
   function moveTaskToList(id, targetListId) {
-  if (!currentList || !targetListId) return;
+    if (!currentList || !targetListId) return;
 
-  return fetch(`http://localhost:8000/tasks/${id}/move`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ listId: targetListId }),
-  })
-    .then((response) => {
-      if (response.status !== 200) {
-        throw new Error(`Unable to move task to a different list (${response.status}).`);
-      }
-
-      setTasks((previous) => previous.map((task) => {
-        if (task._id === id) {
-          return { ...task, listId: targetListId };
-        } else {
-          return task;
-        }
-   })
-);
-      setSelectedTaskId((previous) => previous.filter((taskId) => taskId !== id));
+    return fetch(`http://localhost:8000/tasks/${id}/move`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ listId: targetListId }),
     })
-    .catch((error) => {
-      console.log(error);
-    });
-}
+      .then((response) => {
+        if (response.status !== 200) {
+          throw new Error(
+            `Unable to move task to a different list (${response.status}).`
+          );
+        }
+
+        setTasks((previous) =>
+          previous.map((task) => {
+            if (task._id === id) {
+              return { ...task, listId: targetListId };
+            } else {
+              return task;
+            }
+          })
+        );
+        setSelectedTaskId((previous) =>
+          previous.filter((taskId) => taskId !== id)
+        );
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
 
   useEffect(() => {
     fetchTasks()

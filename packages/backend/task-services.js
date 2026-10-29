@@ -132,7 +132,6 @@ function updateTaskListId(id, targetListId) {
   });
 }
 
-
 export {
   getTasks,
   findTaskById,

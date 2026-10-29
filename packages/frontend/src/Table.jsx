@@ -30,8 +30,8 @@ function TableHeader(props) {
                 aria-label="Archive Task"
                 onClick={() => {
                   setSelectedTaskId((previous) =>
-                  previous.filter((taskId) => taskId !== id)
-);
+                    previous.filter((taskId) => taskId !== id)
+                  );
                   props.selectedTaskId.forEach((id) => {
                     props.archiveTask(id);
                   });
@@ -44,7 +44,7 @@ function TableHeader(props) {
                 aria-label="Delete Task"
                 onClick={() => {
                   setSelectedTaskId((previous) =>
-                  previous.filter((taskId) => taskId !== id) 
+                    previous.filter((taskId) => taskId !== id)
                   );
                   props.selectedTaskId.forEach((id) => {
                     props.removeTask(id);
@@ -70,7 +70,9 @@ function TableHeader(props) {
                     aria-modal="true"
                     aria-labelledby="move-task-title"
                   >
-                    <h2 id="move-task-title">Choose a list to move a task to.</h2>
+                    <h2 id="move-task-title">
+                      Choose a list to move a task to.
+                    </h2>
 
                     {props.lists
                       .filter((list) => list._id !== props.selectedListId)
@@ -345,7 +347,7 @@ function EditIcon() {
 }
 
 function MoveListIcon() {
-  return(
+  return (
     <svg
       style={{ width: '29px', height: '29px', flexShrink: 0 }}
       viewBox="0 4.8 29 19.4"
@@ -379,7 +381,7 @@ function MoveListIcon() {
         <path d="M21.8 14.375h3M21.8 17.175h3M21.8 19.975h3" />
       </g>
       <path
-      d="M9.65 8.95C12.3 4.65 16.1 5.05 18.45 8.55l.65-.82a.35.35 0 0 1 .62.22v2.5a.35.35 0 0 1-.48.33l-2.43-.96a.35.35 0 0 1 .02-.66l.93-.3C15.2 5.8 12.65 6.5 10.7 8.72Z"
+        d="M9.65 8.95C12.3 4.65 16.1 5.05 18.45 8.55l.65-.82a.35.35 0 0 1 .62.22v2.5a.35.35 0 0 1-.48.33l-2.43-.96a.35.35 0 0 1 .02-.66l.93-.3C15.2 5.8 12.65 6.5 10.7 8.72Z"
         fill="currentColor"
       />
     </svg>
