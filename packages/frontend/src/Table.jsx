@@ -1,10 +1,112 @@
 import { useRef, useState } from 'react';
 
-function TableHeader() {
+function TableHeader(props) {
+  const selectAll = props.taskData.every((row) =>
+    props.selectedTaskId.includes(row._id)
+  );
+  const selectedTask = props.selectedTaskId.length > 0;
   return (
     <thead>
-      <th>Task</th>
-      <th></th>
+      <tr>
+        <th>
+          <label htmlFor="select-all">
+            <input
+              type="checkbox"
+              id="select-all"
+              checked={selectAll}
+              onChange={(event) => {
+                if (event.target.checked) {
+                  props.setSelectedTaskId(props.taskData.map((row) => row._id));
+                } else {
+                  props.setSelectedTaskId([]);
+                }
+              }}
+            ></input>
+          </label>
+          {selectedTask === true && (
+            <div className="bulk-select-actions">
+              <button
+                className="archive-icon-button"
+                aria-label="Archive Task"
+                onClick={() => {
+                  setSelectedTaskId((previous) =>
+                  previous.filter((taskId) => taskId !== id)
+);
+                  props.selectedTaskId.forEach((id) => {
+                    props.archiveTask(id);
+                  });
+                }}
+              >
+                <ArchiveIcon />
+              </button>
+              <button
+                className="archive-icon-button"
+                aria-label="Delete Task"
+                onClick={() => {
+                  setSelectedTaskId((previous) =>
+                  previous.filter((taskId) => taskId !== id) 
+                  );
+                  props.selectedTaskId.forEach((id) => {
+                    props.removeTask(id);
+                  });
+                }}
+              >
+                <DeleteIcon />
+              </button>
+              <button
+                className="archive-icon-button"
+                aria-label="Move Task To A Different List"
+                onClick={() => {
+                  props.setIsMoveTaskOpen(true);
+                }}
+              >
+                <MoveListIcon />
+              </button>
+              {props.isMoveTaskOpen && (
+                <div className="list-dialog-backdrop">
+                  <section
+                    className="list-dialog"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="move-task-title"
+                  >
+                    <h2 id="move-task-title">Choose a list to move a task to.</h2>
+
+                    {props.lists
+                      .filter((list) => list._id !== props.selectedListId)
+                      .map((list) => (
+                        <button
+                          type="button"
+                          key={list._id}
+                          onClick={() => {
+                            props.selectedTaskId.forEach((id) => {
+                              props.moveTaskToList(id, list._id);
+                            });
+
+                            props.setIsMoveTaskOpen(false);
+                          }}
+                        >
+                          {list.name}
+                        </button>
+                      ))}
+
+                    <div className="list-dialog-actions">
+                      <button
+                        type="button"
+                        onClick={() => props.setIsMoveTaskOpen(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              )}
+            </div>
+          )}
+        </th>
+        <th>Task</th>
+        <th>ID</th>
+      </tr>
     </thead>
   );
 }
@@ -62,6 +164,24 @@ function TableBody(props) {
           setDropTargetId(null);
         }}
       >
+        <td>
+          <label htmlFor={`checkbox-${row._id}`}>
+            <input
+              type="checkbox"
+              id={`checkbox-${row._id}`}
+              checked={props.selectedTaskId.includes(row._id)}
+              onChange={(event) => {
+                if (event.target.checked) {
+                  props.setSelectedTaskId((previous) => [...previous, row._id]);
+                } else {
+                  props.setSelectedTaskId((previous) =>
+                    previous.filter((id) => id !== row._id)
+                  );
+                }
+              }}
+            ></input>
+          </label>
+        </td>
         <td onClick={() => props.setEditingId(row._id)}>
           {(() => {
             if (isEditing) {
@@ -139,10 +259,9 @@ function TableBody(props) {
         setDropTargetId(null);
       }}
     >
-      <td colSpan="2"></td>
+      <td colSpan="3"></td>
     </tr>
   );
-
   return (
     <tbody>
       {rows}
@@ -155,6 +274,11 @@ function Table(props) {
   return (
     <table>
       <TableHeader
+        isMoveTaskOpen={props.isMoveTaskOpen}
+        setIsMoveTaskOpen={props.setIsMoveTaskOpen}
+        lists={props.lists}
+        selectedListId={props.selectedListId}
+        moveTaskToList={props.moveTaskToList}
         taskData={props.taskData}
         selectedTaskId={props.selectedTaskId}
         setSelectedTaskId={props.setSelectedTaskId}
@@ -220,4 +344,45 @@ function EditIcon() {
   );
 }
 
+function MoveListIcon() {
+  return(
+    <svg
+      style={{ width: '29px', height: '29px', flexShrink: 0 }}
+      viewBox="0 4.8 29 19.4"
+      preserveAspectRatio="none"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <g
+        stroke="currentColor"
+        strokeWidth="0.65"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M9.25 7.6H3.5A1 1 0 0 0 2.5 8.6v8.9a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-8.3" />
+        <rect
+          x="4.25"
+          y="9.5"
+          width="1.65"
+          height="1.65"
+          rx=".3"
+          fill="currentColor"
+        />
+        <rect x="4.25" y="12.4" width="1.65" height="1.65" rx=".3" />
+        <rect x="4.25" y="15.3" width="1.65" height="1.65" rx=".3" />
+        <path d="M7.2 10.325h3.65M7.2 13.225h3.65M7.2 16.125h3.65" />
+
+        <rect x="17.2" y="11.8" width="9.3" height="10.7" rx="1" />
+        <rect x="18.9" y="13.6" width="1.55" height="1.55" rx=".3" />
+        <rect x="18.9" y="16.4" width="1.55" height="1.55" rx=".3" />
+        <rect x="18.9" y="19.2" width="1.55" height="1.55" rx=".3" />
+        <path d="M21.8 14.375h3M21.8 17.175h3M21.8 19.975h3" />
+      </g>
+      <path
+      d="M9.65 8.95C12.3 4.65 16.1 5.05 18.45 8.55l.65-.82a.35.35 0 0 1 .62.22v2.5a.35.35 0 0 1-.48.33l-2.43-.96a.35.35 0 0 1 .02-.66l.93-.3C15.2 5.8 12.65 6.5 10.7 8.72Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
 export default Table;

@@ -31,6 +31,7 @@ function MyApp() {
   const [archivedTasks, setArchivedTasks] = useState([]);
 
   const [deletedTasks, setDeletedTasks] = useState([]);
+  const [isMoveTaskOpen, setIsMoveTaskOpen] = useState(false);
 
   function fetchTasks() {
     const promise = fetch('http://localhost:8000/tasks');
@@ -154,6 +155,9 @@ function MyApp() {
           setTasks((currentTasks) =>
             currentTasks.filter((task) => task._id !== id)
           );
+          setSelectedTaskId((previous) =>
+          previous.filter((taskId) => taskId !== id)
+          );
         }
       })
       .catch((error) => {
@@ -188,6 +192,9 @@ function MyApp() {
           );
           setArchivedTasks((currentTasks) =>
             currentTasks.filter((task) => task._id !== id)
+          );
+          setSelectedTaskId((previous) =>
+          previous.filter((taskId) => taskId !== id)
           );
         }
       })
@@ -395,6 +402,36 @@ function MyApp() {
       });
   }
 
+  function moveTaskToList(id, targetListId) {
+  if (!currentList || !targetListId) return;
+
+  return fetch(`http://localhost:8000/tasks/${id}/move`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ listId: targetListId }),
+  })
+    .then((response) => {
+      if (response.status !== 200) {
+        throw new Error(`Unable to move task to a different list (${response.status}).`);
+      }
+
+      setTasks((previous) => previous.map((task) => {
+        if (task._id === id) {
+          return { ...task, listId: targetListId };
+        } else {
+          return task;
+        }
+   })
+);
+      setSelectedTaskId((previous) => previous.filter((taskId) => taskId !== id));
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
+
   useEffect(() => {
     fetchTasks()
       .then((res) => res.json()) // convert response to json
@@ -581,7 +618,7 @@ function MyApp() {
 
               <div className="task-panel">
                 <SearchBar
-                  key={currentList?._id}
+                  key={selectedListId}
                   lists={lists}
                   removeTask={deleteTask}
                   taskData={currentTasks}
@@ -593,6 +630,8 @@ function MyApp() {
                   </p>
                 ) : (
                   <Table
+                    isMoveTaskOpen={isMoveTaskOpen}
+                    setIsMoveTaskOpen={setIsMoveTaskOpen}
                     taskData={currentTasks}
                     reorderTasks={reorderTasks}
                     removeTask={deleteTask}
@@ -603,6 +642,9 @@ function MyApp() {
                     editingId={editingId}
                     setEditingId={setEditingId}
                     setTaskDetailsId={setTaskDetailsId}
+                    lists={lists}
+                    selectedListId={selectedListId}
+                    moveTaskToList={moveTaskToList}
                   />
                 )}
                 <Form handleSubmit={updateList} />
