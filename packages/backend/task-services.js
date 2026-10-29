@@ -123,6 +123,16 @@ function getDeletedTasks() {
   return taskModel.find({ deleted: true });
 }
 
+//finds a task by id & updates its listid, then saves the change
+function updateTaskListId(id, targetListId) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.listId = targetListId;
+    return task.save();
+  });
+}
+
+
 export {
   getTasks,
   findTaskById,
@@ -137,4 +147,5 @@ export {
   restoreArchivedTask,
   restoreDeletedTask,
   getDeletedTasks,
+  updateTaskListId,
 };
