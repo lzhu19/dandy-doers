@@ -43,6 +43,14 @@ afterEach(() => {
   mockingoose.resetAll();
 });
 
+describe('Task timestamps', () => {
+  it('enables createdAt and updatedAt date fields', () => {
+    expect(Task.schema.options.timestamps).toBe(true);
+    expect(Task.schema.path('createdAt').instance).toBe('Date');
+    expect(Task.schema.path('updatedAt').instance).toBe('Date');
+  });
+});
+
 describe('reorderTasks', () => {
   it('rejects when the submitted IDs do not represent every task in the list', async () => {
     mockingoose(Task).toReturn((query) => {
