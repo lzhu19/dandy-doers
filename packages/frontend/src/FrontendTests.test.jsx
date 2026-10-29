@@ -1141,7 +1141,7 @@ describe('reorderTasks', () => {
         );
 
       expect(
-        rows.map((row) => row.querySelectorAll('td')[0].textContent)
+        rows.map((row) => row.querySelectorAll('td')[1].textContent)
       ).toEqual(['Homework 2', 'Homework 1', 'Homework 3']);
     });
   });
@@ -1522,12 +1522,14 @@ describe('Table interactions', () => {
   it('supports task actions, inline editing, and drag-and-drop reorder', () => {
     const props = {
       taskData: [activeTask, { ...activeTask, _id: 'task-2', name: 'Essay' }],
+      selectedTaskId: [],
       reorderTasks: vi.fn(),
       removeTask: vi.fn(),
       updateTask: vi.fn(),
       archiveTask: vi.fn(),
       setEditingId: vi.fn(),
       setTaskDetailsId: vi.fn(),
+      setSelectedTaskId: vi.fn(),
     };
     const { container, rerender } = render(<Table {...props} />);
     fireEvent.click(screen.getByText('Homework'));
