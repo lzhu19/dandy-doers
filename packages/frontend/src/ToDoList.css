@@ -356,6 +356,17 @@ tr.drop-target td {
   padding-right: 16px;
 }
 
+.task-checkbox-cell {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.task-checkbox-cell label {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+
 .archive-icon-button,
 .delete-icon-button,
 .edit-icon-button,
