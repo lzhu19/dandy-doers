@@ -253,6 +253,39 @@ tr.drop-target td {
   color: #3a3042;
 }
 
+.task-panel input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 2px solid #9e8eab;
+  border: 2px solid #9e8eab;
+  border-radius: 6px;
+  background-color: #fff;
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+}
+
+.task-panel input[type='checkbox']:hover {
+  border-color: #594b65;
+}
+
+.task-panel input[type='checkbox']:checked {
+  border-color: transparent;
+  background-origin: border-box;
+  background-size: 13px, cover;
+  background-image:
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>'),
+    linear-gradient(135deg, #60a5fa, #c084fc);
+}
+
+.task-panel input[type='checkbox']:focus-visible {
+  outline: 2px solid #9e8eab;
+  outline-offset: 2px;
+}
+
 .task-panel-empty-text {
   color: #bababa;
   font-size: 20px;
