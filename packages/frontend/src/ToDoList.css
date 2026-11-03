@@ -88,11 +88,13 @@ tr.drop-target td {
 .user-list-select:hover {
   background: #4b3f56;
   color: #fffbf2;
+  border: none;
 }
 
 .user-list-select:active {
   background: #292230;
   color: #fffbf2;
+  border: none;
 }
 
 .user-list-select:focus-visible {
@@ -370,7 +372,7 @@ tr.drop-target td {
 .bulk-select-actions {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
   margin-bottom: 8px;
   padding: 10px 16px;
   border-radius: 10px;
@@ -389,9 +391,33 @@ tr.drop-target td {
   letter-spacing: 0.25px;
 }
 
-.bulk-select-actions .archive-icon-button {
-  width: 24 px;
-  height: 24px;
+.archive-icon-button svg.move-list-icon {
+  width: 90%;
+  height: 90%;
+}
+
+.move-task-popup {
+  width: 560px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 15px;
+  background: #fffbf2;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 25%);
+}
+
+.move-task-body {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 24px 50px 32px;
+}
+
+.move-task-empty {
+  margin: 0;
+  color: #9e8eab;
+  font-size: 16px;
+  letter-spacing: 0.25px;
 }
 
 .archive-icon-button,
