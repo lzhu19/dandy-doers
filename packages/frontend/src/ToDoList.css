@@ -367,6 +367,33 @@ tr.drop-target td {
   margin: 0;
 }
 
+.bulk-select-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #ede9e0;
+}
+
+.bulk-select-count {
+  margin-right: auto;
+  color: #3a3042;
+  font-family:
+    'SF Pro',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.25px;
+}
+
+.bulk-select-actions .archive-icon-button {
+  width: 24 px;
+  height: 24px;
+}
+
 .archive-icon-button,
 .delete-icon-button,
 .edit-icon-button,

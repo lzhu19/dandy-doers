@@ -4,7 +4,6 @@ function TableHeader(props) {
   const selectAll = props.taskData.every((row) =>
     props.selectedTaskId.includes(row._id)
   );
-  const selectedTask = props.selectedTaskId.length > 0;
   return (
     <thead>
       <tr>
@@ -23,82 +22,6 @@ function TableHeader(props) {
               }}
             ></input>
           </label>
-          {selectedTask === true && (
-            <div className="bulk-select-actions">
-              <button
-                className="archive-icon-button"
-                aria-label="Archive Task"
-                onClick={() => {
-                  props.selectedTaskId.forEach((id) => {
-                    props.archiveTask(id);
-                  });
-                }}
-              >
-                <ArchiveIcon />
-              </button>
-              <button
-                className="archive-icon-button"
-                aria-label="Delete Task"
-                onClick={() => {
-                  props.selectedTaskId.forEach((id) => {
-                    props.removeTask(id);
-                  });
-                }}
-              >
-                <DeleteIcon />
-              </button>
-              <button
-                className="archive-icon-button"
-                aria-label="Move Task To A Different List"
-                onClick={() => {
-                  props.setIsMoveTaskOpen(true);
-                }}
-              >
-                <MoveListIcon />
-              </button>
-              {props.isMoveTaskOpen && (
-                <div className="list-dialog-backdrop">
-                  <section
-                    className="list-dialog"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="move-task-title"
-                  >
-                    <h2 id="move-task-title">
-                      Choose a list to move a task to.
-                    </h2>
-
-                    {props.lists
-                      .filter((list) => list._id !== props.selectedListId)
-                      .map((list) => (
-                        <button
-                          type="button"
-                          key={list._id}
-                          onClick={() => {
-                            props.selectedTaskId.forEach((id) => {
-                              props.moveTaskToList(id, list._id);
-                            });
-
-                            props.setIsMoveTaskOpen(false);
-                          }}
-                        >
-                          {list.name}
-                        </button>
-                      ))}
-
-                    <div className="list-dialog-actions">
-                      <button
-                        type="button"
-                        onClick={() => props.setIsMoveTaskOpen(false)}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </section>
-                </div>
-              )}
-            </div>
-          )}
         </th>
         <th>Task</th>
         <th></th>
@@ -107,6 +30,91 @@ function TableHeader(props) {
   );
 }
 
+function BulkActions(props) {
+  //nothing selected, so nothing to show
+  if (props.selectedTaskId.length === 0) {
+    return null;
+  }
+  return (
+    <div className="bulk-select-actions">
+      <span className="bulk-select-count">
+        {props.selectedTaskId.length} selected
+      </span>
+      <button
+        className="archive-icon-button"
+        aria-label="Archive Task"
+        onClick={() => {
+          props.selectedTaskId.forEach((id) => {
+            props.archiveTask(id);
+          });
+        }}
+      >
+        <ArchiveIcon />
+      </button>
+      <button
+        className="archive-icon-button"
+        aria-label="Delete Task"
+        onClick={() => {
+          props.selectedTaskId.forEach((id) => {
+            props.removeTask(id);
+          });
+        }}
+      >
+        <DeleteIcon />
+      </button>
+      <button
+        className="archive-icon-button"
+        aria-label="Move Task To A Different List"
+        onClick={() => {
+          props.setIsMoveTaskOpen(true);
+        }}
+      >
+        <MoveListIcon />
+      </button>
+      {props.isMoveTaskOpen && (
+        <div className="list-dialog-backdrop">
+          <section
+            className="list-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="move-task-title"
+          >
+            <h2 id="move-task-title">Choose a list to move a task to.</h2>
+
+            {props.lists
+              .filter((list) => list._id !== props.selectedListId)
+              .map((list) => (
+                <button
+                  type="button"
+                  key={list._id}
+                  onClick={() => {
+                    props.selectedTaskId.forEach((id) => {
+                      props.moveTaskToList(id, list._id);
+                    });
+
+                    props.setIsMoveTaskOpen(false);
+                  }}
+                >
+                  {list.name}
+                </button>
+              ))}
+
+            <div className="list-dialog-actions">
+              <button
+                type="button"
+                onClick={() => props.setIsMoveTaskOpen(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+//////////////////////////
 function TableBody(props) {
   const draggedTaskId = useRef(null);
   const [dropTargetId, setDropTargetId] = useState(null);
@@ -268,33 +276,38 @@ function TableBody(props) {
 
 function Table(props) {
   return (
-    <table>
-      <TableHeader
+    <>
+      <BulkActions
+        selectedTaskId={props.selectedTaskId}
+        archiveTask={props.archiveTask}
+        removeTask={props.removeTask}
         isMoveTaskOpen={props.isMoveTaskOpen}
         setIsMoveTaskOpen={props.setIsMoveTaskOpen}
         lists={props.lists}
         selectedListId={props.selectedListId}
         moveTaskToList={props.moveTaskToList}
-        taskData={props.taskData}
-        selectedTaskId={props.selectedTaskId}
-        setSelectedTaskId={props.setSelectedTaskId}
-        removeTask={props.removeTask}
-        archiveTask={props.archiveTask}
       />
-      <TableBody
-        taskData={props.taskData}
-        reorderTasks={props.reorderTasks}
-        removeTask={props.removeTask}
-        archiveTask={props.archiveTask}
-        //deleteTask={props.deleteTask}
-        updateTask={props.updateTask}
-        selectedTaskId={props.selectedTaskId}
-        setSelectedTaskId={props.setSelectedTaskId}
-        editingId={props.editingId}
-        setEditingId={props.setEditingId}
-        setTaskDetailsId={props.setTaskDetailsId}
-      />
-    </table>
+      <table>
+        <TableHeader
+          taskData={props.taskData}
+          selectedTaskId={props.selectedTaskId}
+          setSelectedTaskId={props.setSelectedTaskId}
+        />
+        <TableBody
+          taskData={props.taskData}
+          reorderTasks={props.reorderTasks}
+          removeTask={props.removeTask}
+          archiveTask={props.archiveTask}
+          //deleteTask={props.deleteTask}
+          updateTask={props.updateTask}
+          selectedTaskId={props.selectedTaskId}
+          setSelectedTaskId={props.setSelectedTaskId}
+          editingId={props.editingId}
+          setEditingId={props.setEditingId}
+          setTaskDetailsId={props.setTaskDetailsId}
+        />
+      </table>
+    </>
   );
 }
 
@@ -342,13 +355,7 @@ function EditIcon() {
 
 function MoveListIcon() {
   return (
-    <svg
-      style={{ width: '29px', height: '29px', flexShrink: 0 }}
-      viewBox="0 4.8 29 19.4"
-      preserveAspectRatio="none"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg viewBox="0 4.8 29 19.4" fill="none" xmlns="http://www.w3.org/2000/svg">
       <g
         stroke="currentColor"
         strokeWidth="0.65"
