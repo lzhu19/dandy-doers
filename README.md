@@ -13,8 +13,10 @@ College students juggle assignments, deadlines, and study tasks. Dandy Doers off
 ## Features
 
 - Create, edit, and delete tasks.
+- Open a task details popup to view or edit its name and notes.
 - Archive tasks and restore them when needed.
 - Move tasks to a deleted section, then restore or permanently delete them.
+- Click and drag tasks to reorder them in a list.
 - Create, rename, and delete multiple to-do lists.
 - Search for tasks by name.
 - Access the website without downloading an app.
