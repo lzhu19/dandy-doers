@@ -1,25 +1,72 @@
-# To-Do List
+# Dandy Doers
 
-Group Name: Dandy Doers
+_Be a Dandy Doer and stay organized with Dandy Doer To-Do Lists!_
 
 ## Overview
 
-The To-Do List is a productivity website that helps you stay organized. It is for college students who want a convenient way to stay organized with tasks they need to finish. Unlike other notes apps and paper planners, our product is easy to access, quick to update, visually aesthetic, and requires no download.
+Dandy Doers is a web-based to-do list application for college students. It brings everyday tasks together in one place, with tools to create lists, find tasks, and manage completed or unwanted items.
+
+## Purpose
+
+College students juggle assignments, deadlines, and study tasks. Dandy Doers offers a convenient, easy-to-update, and visually appealing way to stay organized without relying on paper planners or downloading an app.
 
 ## Features
 
-- Seamlessly create, edit, and delete tasks without worrying about losing your task list.
-- feature2
+- Create, edit, and delete tasks.
+- Archive tasks and restore them when needed.
+- Move tasks to a deleted section, then restore or permanently delete them.
+- Create, rename, and delete multiple to-do lists.
+- Search for tasks by name.
+- Access the website without downloading an app.
 
-## Setup
+## Tech Stack
 
-1. Run `npm install` in the root directory
-2. Set up Prettier to work in VSCode using [this guide](https://blog.yogeshchavan.dev/automatically-format-code-on-file-save-in-visual-studio-code-using-prettier).
+- Frontend: React and Vite
+- Backend: Node.js and Express
+- Database: MongoDB
+- Testing: Vitest (frontend) and Jest (backend)
+- Formatting and linting: Prettier and ESLint
 
-Follow the [Google JS style guide](https://google.github.io/styleguide/jsguide.html).
+## Dev Setup
 
-Remember to run `npm run format` in the root directory before staging changes to keep formatting consistent.
+1. Install dependencies from the repository root:
+
+   ```sh
+   npm install
+   ```
+
+2. Configure `MONGODB_URI` in `packages/backend/.env` with the connection string for your MongoDB database.
+3. Start the backend from the repository root:
+
+   ```sh
+   npm run dev-backend
+   ```
+
+4. In a separate terminal, start the frontend:
+
+   ```sh
+   npm run dev-frontend
+   ```
+
+5. Open the local URL printed by Vite in your browser.
+
+## Dev Commands
+
+Run the test suites:
+
+```sh
+npm test
+```
+
+Check code style and formatting:
+
+```sh
+npm run lint
+npm run format
+```
+
+Follow the [Google JavaScript Style Guide](https://google.github.io/styleguide/jsguide.html) for code conventions.
 
 ## Documentation
 
-- [FigJam](https://www.figma.com/board/JvA38iv8Gwq7yqDvcRrC1z/CSC3100?node-id=0-1&t=tI2XQA8jwAh9EDha-1)
+Project tasks, progress, ideas, and planning are tracked in our [FigJam board](https://www.figma.com/board/JvA38iv8Gwq7yqDvcRrC1z/CSC3100?node-id=0-1&t=tI2XQA8jwAh9EDha-1).
