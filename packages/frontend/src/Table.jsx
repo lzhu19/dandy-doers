@@ -1,14 +1,139 @@
 import { useRef, useState } from 'react';
 
-function TableHeader() {
+function TableHeader(props) {
+  const selectAll = props.taskData.every((row) =>
+    props.selectedTaskId.includes(row._id)
+  );
   return (
     <thead>
-      <th>Task</th>
-      <th></th>
+      <tr>
+        <th className="task-checkbox-cell">
+          <label htmlFor="select-all">
+            <input
+              type="checkbox"
+              id="select-all"
+              checked={selectAll}
+              onChange={(event) => {
+                if (event.target.checked) {
+                  props.setSelectedTaskId(props.taskData.map((row) => row._id));
+                } else {
+                  props.setSelectedTaskId([]);
+                }
+              }}
+            ></input>
+          </label>
+        </th>
+        <th>Task</th>
+        <th></th>
+      </tr>
     </thead>
   );
 }
 
+function BulkActions(props) {
+  //nothing selected, so nothing to show
+  if (props.selectedTaskId.length === 0) {
+    return null;
+  }
+
+  const otherLists = props.lists.filter(
+    (list) => list._id !== props.selectedListId
+  );
+
+  return (
+    <div className="bulk-select-actions">
+      <span className="bulk-select-count">
+        {props.selectedTaskId.length} selected
+      </span>
+      <button
+        className="archive-icon-button"
+        aria-label="Move Task To A Different List"
+        onClick={() => {
+          props.setIsMoveTaskOpen(true);
+        }}
+      >
+        <MoveListIcon />
+      </button>
+      <button
+        className="archive-icon-button"
+        aria-label="Archive Task"
+        onClick={() => {
+          props.selectedTaskId.forEach((id) => {
+            props.archiveTask(id);
+          });
+          props.setSelectedTaskId([]);
+        }}
+      >
+        <ArchiveIcon />
+      </button>
+      <button
+        className="archive-icon-button"
+        aria-label="Delete Task"
+        onClick={() => {
+          props.selectedTaskId.forEach((id) => {
+            props.removeTask(id);
+          });
+          props.setSelectedTaskId([]);
+        }}
+      >
+        <DeleteIcon />
+      </button>
+
+      {props.isMoveTaskOpen && (
+        <div
+          className="task-details-bg"
+          onClick={() => props.setIsMoveTaskOpen(false)}
+        >
+          <section
+            className="move-task-popup"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="move-task-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="task-details-header">
+              <h2 className="task-details-title" id="move-task-title">
+                Choose a list to move task(s) to
+              </h2>
+              <button
+                className="task-details-cancel"
+                type="button"
+                onClick={() => props.setIsMoveTaskOpen(false)}
+              >
+                Cancel
+              </button>
+            </div>
+            <hr className="task-details-divider" />
+
+            <div className="move-task-body">
+              {otherLists.length === 0 && (
+                <p className="move-task-empty">No other lists available.</p>
+              )}
+              {otherLists.map((list) => (
+                <button
+                  className="user-list-select"
+                  type="button"
+                  key={list._id}
+                  onClick={() => {
+                    props.selectedTaskId.forEach((id) => {
+                      props.moveTaskToList(id, list._id);
+                    });
+                    props.setSelectedTaskId([]);
+                    props.setIsMoveTaskOpen(false);
+                  }}
+                >
+                  {list.name}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+//////////////////////////
 function TableBody(props) {
   const draggedTaskId = useRef(null);
   const [dropTargetId, setDropTargetId] = useState(null);
@@ -62,6 +187,24 @@ function TableBody(props) {
           setDropTargetId(null);
         }}
       >
+        <td className="task-checkbox-cell">
+          <label htmlFor={`checkbox-${row._id}`}>
+            <input
+              type="checkbox"
+              id={`checkbox-${row._id}`}
+              checked={props.selectedTaskId.includes(row._id)}
+              onChange={(event) => {
+                if (event.target.checked) {
+                  props.setSelectedTaskId((previous) => [...previous, row._id]);
+                } else {
+                  props.setSelectedTaskId((previous) =>
+                    previous.filter((id) => id !== row._id)
+                  );
+                }
+              }}
+            ></input>
+          </label>
+        </td>
         <td onClick={() => props.setEditingId(row._id)}>
           {(() => {
             if (isEditing) {
@@ -139,10 +282,9 @@ function TableBody(props) {
         setDropTargetId(null);
       }}
     >
-      <td colSpan="2"></td>
+      <td colSpan="3"></td>
     </tr>
   );
-
   return (
     <tbody>
       {rows}
@@ -153,28 +295,39 @@ function TableBody(props) {
 
 function Table(props) {
   return (
-    <table>
-      <TableHeader
-        taskData={props.taskData}
+    <>
+      <BulkActions
         selectedTaskId={props.selectedTaskId}
-        setSelectedTaskId={props.setSelectedTaskId}
-        removeTask={props.removeTask}
         archiveTask={props.archiveTask}
-      />
-      <TableBody
-        taskData={props.taskData}
-        reorderTasks={props.reorderTasks}
         removeTask={props.removeTask}
-        archiveTask={props.archiveTask}
-        //deleteTask={props.deleteTask}
-        updateTask={props.updateTask}
-        selectedTaskId={props.selectedTaskId}
+        isMoveTaskOpen={props.isMoveTaskOpen}
+        setIsMoveTaskOpen={props.setIsMoveTaskOpen}
+        lists={props.lists}
         setSelectedTaskId={props.setSelectedTaskId}
-        editingId={props.editingId}
-        setEditingId={props.setEditingId}
-        setTaskDetailsId={props.setTaskDetailsId}
+        selectedListId={props.selectedListId}
+        moveTaskToList={props.moveTaskToList}
       />
-    </table>
+      <table>
+        <TableHeader
+          taskData={props.taskData}
+          selectedTaskId={props.selectedTaskId}
+          setSelectedTaskId={props.setSelectedTaskId}
+        />
+        <TableBody
+          taskData={props.taskData}
+          reorderTasks={props.reorderTasks}
+          removeTask={props.removeTask}
+          archiveTask={props.archiveTask}
+          //deleteTask={props.deleteTask}
+          updateTask={props.updateTask}
+          selectedTaskId={props.selectedTaskId}
+          setSelectedTaskId={props.setSelectedTaskId}
+          editingId={props.editingId}
+          setEditingId={props.setEditingId}
+          setTaskDetailsId={props.setTaskDetailsId}
+        />
+      </table>
+    </>
   );
 }
 
@@ -220,4 +373,21 @@ function EditIcon() {
   );
 }
 
+function MoveListIcon() {
+  return (
+    <svg
+      className="move-list-icon"
+      viewBox="0 0 12 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M2.085 1C2.18844 0.707422 2.38008 0.454129 2.63351 0.275028C2.88694 0.0959278 3.18967 -0.00016248 3.5 2.06237e-07H6.5C6.81033 -0.00016248 7.11306 0.0959278 7.36649 0.275028C7.61992 0.454129 7.81156 0.707422 7.915 1H8.5C8.89782 1 9.27936 1.15804 9.56066 1.43934C9.84196 1.72064 10 2.10218 10 2.5V4.6C9.68029 4.43668 9.34536 4.30505 9 4.207V2.5C9 2.36739 8.94732 2.24022 8.85355 2.14645C8.75979 2.05268 8.63261 2 8.5 2H7.915C7.81156 2.29258 7.61992 2.54587 7.36649 2.72497C7.11306 2.90407 6.81033 3.00016 6.5 3H3.5C3.18967 3.00016 2.88694 2.90407 2.63351 2.72497C2.38008 2.54587 2.18844 2.29258 2.085 2H1.5C1.36739 2 1.24021 2.05268 1.14645 2.14645C1.05268 2.24022 1 2.36739 1 2.5V12.5C1 12.6326 1.05268 12.7598 1.14645 12.8536C1.24021 12.9473 1.36739 13 1.5 13H3.257C3.571 13.38 3.934 13.716 4.337 14H1.5C1.10218 14 0.720644 13.842 0.43934 13.5607C0.158035 13.2794 0 12.8978 0 12.5V2.5C0 2.10218 0.158035 1.72064 0.43934 1.43934C0.720644 1.15804 1.10218 1 1.5 1H2.085ZM3.5 1C3.36739 1 3.24021 1.05268 3.14645 1.14645C3.05268 1.24022 3 1.36739 3 1.5C3 1.63261 3.05268 1.75979 3.14645 1.85355C3.24021 1.94732 3.36739 2 3.5 2H6.5C6.63261 2 6.75979 1.94732 6.85355 1.85355C6.94732 1.75979 7 1.63261 7 1.5C7 1.36739 6.94732 1.24022 6.85355 1.14645C6.75979 1.05268 6.63261 1 6.5 1H3.5ZM12 9.5C12 10.0909 11.8836 10.6761 11.6575 11.2221C11.4313 11.768 11.0998 12.2641 10.682 12.682C10.2641 13.0998 9.76804 13.4313 9.22208 13.6575C8.67611 13.8836 8.09095 14 7.5 14C6.90905 14 6.32389 13.8836 5.77792 13.6575C5.23196 13.4313 4.73588 13.0998 4.31802 12.682C3.90016 12.2641 3.56869 11.768 3.34254 11.2221C3.1164 10.6761 3 10.0909 3 9.5C3 8.30653 3.47411 7.16193 4.31802 6.31802C5.16193 5.47411 6.30653 5 7.5 5C8.69347 5 9.83807 5.47411 10.682 6.31802C11.5259 7.16193 12 8.30653 12 9.5ZM9.853 9.854L9.856 9.851C9.94752 9.7582 9.99919 9.63334 10 9.503V9.497C9.99918 9.36569 9.94674 9.23997 9.854 9.147L7.854 7.147C7.76025 7.05311 7.63304 7.00032 7.50035 7.00022C7.36767 7.00013 7.24039 7.05275 7.1465 7.1465C7.05261 7.24025 6.99982 7.36747 6.99972 7.50015C6.99963 7.63283 7.05225 7.76011 7.146 7.854L8.293 9H5.5C5.36739 9 5.24021 9.05268 5.14645 9.14645C5.05268 9.24021 5 9.36739 5 9.5C5 9.63261 5.05268 9.75979 5.14645 9.85355C5.24021 9.94732 5.36739 10 5.5 10H8.293L7.146 11.146C7.05211 11.2399 6.99937 11.3672 6.99937 11.5C6.99937 11.6328 7.05211 11.7601 7.146 11.854C7.23989 11.9479 7.36722 12.0006 7.5 12.0006C7.63278 12.0006 7.76011 11.9479 7.854 11.854L9.853 9.854Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
 export default Table;
