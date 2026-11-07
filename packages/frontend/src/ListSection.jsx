@@ -1,4 +1,9 @@
-function ListSection({ lists, selectedListId, onSelectList, setSelectedTaskId}) {
+function ListSection({
+  lists,
+  selectedListId,
+  onSelectList,
+  setSelectedTaskId,
+}) {
   return (
     <details className="lists-section">
       <summary className="sidebar-section-title">Lists</summary>

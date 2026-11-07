@@ -282,24 +282,25 @@ app.put('/tasks/:id', (req, res) => {
 
 ////////// PATCH //////////
 app.patch('/tasks/:id/move', (req, res) => {
-   // Check that destination list ID exists.
-  findListById(req.body.listId).then((list) => {
-  if (!list) {
-    return res.status(404).send('List not found.');
-  } 
-  // Move a task to new list using its ID and listId
-  updateTaskListId(req.params.id, req.body.listId)
-    .then((task) =>
-      task
-        ? res.status(200).json(task)
-        : res.status(404).send('Task not found. Cannot move.')
-    )
+  // Check that destination list ID exists.
+  findListById(req.body.listId)
+    .then((list) => {
+      if (!list) {
+        return res.status(404).send('List not found.');
+      }
+      // Move a task to new list using its ID and listId
+      updateTaskListId(req.params.id, req.body.listId)
+        .then((task) =>
+          task
+            ? res.status(200).json(task)
+            : res.status(404).send('Task not found. Cannot move.')
+        )
+        .catch((error) => {
+          console.error('Could not move task to a new list: ', error);
+          res.status(500).send('Could not move task to a new list.');
+        });
+    })
     .catch((error) => {
-      console.error('Could not move task to a new list: ', error);
-      res.status(500).send('Could not move task to a new list.');
-    });
-  }) 
-  .catch((error) => {
       console.error('Could not find destination list id: ', error);
       res.status(500).send('Could not find destination list id.');
     });

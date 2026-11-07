@@ -117,7 +117,7 @@ function BulkActions(props) {
                   onClick={() => {
                     props.selectedTaskId.forEach((id) => {
                       props.moveTaskToList(id, list._id);
-                    })
+                    });
                     props.setSelectedTaskId([]);
                     props.setIsMoveTaskOpen(false);
                   }}

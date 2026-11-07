@@ -29,9 +29,7 @@ const TaskSchema = new mongoose.Schema(
       default: 0,
     },
   },
-  { collection: 'tasks_list',
-    timestamps: true,
-   }
+  { collection: 'tasks_list', timestamps: true }
 );
 
 const Task = mongoose.model('Task', TaskSchema);
