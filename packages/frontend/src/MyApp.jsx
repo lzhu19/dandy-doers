@@ -556,6 +556,7 @@ function MyApp() {
               lists={lists}
               selectedListId={currentList?._id}
               onSelectList={setSelectedListId}
+              setSelectedTaskId={setSelectedTaskId}
             />
             <button
               className="add-list-button"

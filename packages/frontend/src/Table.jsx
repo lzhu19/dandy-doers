@@ -61,6 +61,7 @@ function BulkActions(props) {
           props.selectedTaskId.forEach((id) => {
             props.archiveTask(id);
           });
+          props.setSelectedTaskId([]);
         }}
       >
         <ArchiveIcon />
@@ -72,6 +73,7 @@ function BulkActions(props) {
           props.selectedTaskId.forEach((id) => {
             props.removeTask(id);
           });
+          props.setSelectedTaskId([]);
         }}
       >
         <DeleteIcon />
@@ -115,8 +117,8 @@ function BulkActions(props) {
                   onClick={() => {
                     props.selectedTaskId.forEach((id) => {
                       props.moveTaskToList(id, list._id);
-                    });
-
+                    })
+                    props.setSelectedTaskId([]);
                     props.setIsMoveTaskOpen(false);
                   }}
                 >
@@ -301,6 +303,7 @@ function Table(props) {
         isMoveTaskOpen={props.isMoveTaskOpen}
         setIsMoveTaskOpen={props.setIsMoveTaskOpen}
         lists={props.lists}
+        setSelectedTaskId={props.setSelectedTaskId}
         selectedListId={props.selectedListId}
         moveTaskToList={props.moveTaskToList}
       />
