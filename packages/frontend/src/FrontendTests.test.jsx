@@ -4656,4 +4656,1397 @@ describe('bulk deleting', () => {
     );
   });
 });
+describe('bulk moving', () => {
+  it('moves selected tasks, preserves unselected tasks, clears selection, and closes the dialog', async () => {
+    const user = userEvent.setup();
 
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-1235',
+                name: 'Do a frontflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-100',
+                name: 'Do a backfront flip',
+                listId: 'list-123',
+              },
+            ]),
+        });
+      }
+
+      if (
+        url === 'http://localhost:8000/tasks/task-123/move' &&
+        options.method === 'PATCH'
+      ) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              _id: 'task-123',
+              name: 'Do a backflip',
+              listId: 'list-456',
+            }),
+        });
+      }
+
+      if (
+        url === 'http://localhost:8000/tasks/task-1235/move' &&
+        options.method === 'PATCH'
+      ) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              _id: 'task-1235',
+              name: 'Do a frontflip',
+              listId: 'list-456',
+            }),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+    const taskTwo = await screen.findByRole('cell', { name: 'Do a frontflip' });
+    const taskThree = await screen.findByRole('cell', {
+      name: 'Do a backfront flip',
+    });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+    const taskTwoCheckbox = within(taskTwo.closest('tr')).getByRole('checkbox');
+    const taskThreeCheckbox = within(taskThree.closest('tr')).getByRole(
+      'checkbox'
+    );
+
+    // Find the checkbox for selectAll.
+    const table = taskOne.closest('table');
+    const selectAll = within(table.querySelector('thead')).getByRole(
+      'checkbox'
+    );
+
+    await user.click(taskOneCheckbox);
+    await user.click(taskTwoCheckbox);
+
+    expect(taskOneCheckbox).toBeChecked();
+    expect(taskTwoCheckbox).toBeChecked();
+    expect(taskThreeCheckbox).not.toBeChecked();
+    expect(selectAll).not.toBeChecked();
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+
+    // verify that bulk action controls do appear
+    const moveButton = screen.getByRole('button', {
+      name: 'Move Task To A Different List',
+    });
+
+    await user.click(moveButton);
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Choose a list to move task(s) to',
+    });
+
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Other Stuff' })
+    );
+
+    await waitFor(() => {
+      expect(
+        within(table).queryByRole('cell', { name: 'Do a backflip' })
+      ).not.toBeInTheDocument();
+      expect(
+        within(table).queryByRole('cell', { name: 'Do a frontflip' })
+      ).not.toBeInTheDocument();
+    });
+
+    // check that all options are unselected and unselected remain
+    expect(
+      within(table).getByRole('cell', { name: 'Do a backfront flip' })
+    ).toBeInTheDocument();
+    expect(taskThreeCheckbox).not.toBeChecked();
+    expect(selectAll).not.toBeChecked();
+    expect(screen.queryByText('2 selected')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', { name: 'Choose a list to move task(s) to' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Move Task To A Different List' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Archive Selected Task' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Delete Selected Task' })
+    ).not.toBeInTheDocument();
+
+    // Verify the backend request
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-123/move',
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ listId: 'list-456' }),
+      }
+    );
+
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-1235/move',
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ listId: 'list-456' }),
+      }
+    );
+
+    expect(fetch).not.toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-100/move',
+      expect.objectContaining({ method: 'PATCH' })
+    );
+
+    await user.click(screen.getByText('Lists'));
+
+    const listsSection = screen.getByText('Lists').closest('details');
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Other Stuff' })
+    );
+
+    expect(
+      await screen.findByRole('cell', { name: 'Do a backflip' })
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('cell', { name: 'Do a frontflip' })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('cell', { name: 'Do a backfront flip' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('opens the destination dialog', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+            ]),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Choose a list to move task(s) to' })
+    ).not.toBeInTheDocument();
+
+    // verify that bulk action controls do appear
+    const moveButton = screen.getByRole('button', {
+      name: 'Move Task To A Different List',
+    });
+
+    await user.click(moveButton);
+
+    expect(
+      screen.getByRole('dialog', { name: 'Choose a list to move task(s) to' })
+    ).toBeInTheDocument();
+    expect(taskOneCheckbox).toBeChecked();
+  });
+
+  it('shows other lists and excludes the current list', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+              { _id: 'list-789', name: 'More Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+            ]),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+    await user.click(
+      screen.getByRole('button', { name: 'Move Task To A Different List' })
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Choose a list to move task(s) to',
+    });
+
+    expect(
+      within(dialog).getByRole('button', { name: 'Other Stuff' })
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('button', { name: 'More Stuff' })
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('button', { name: 'Cool Stuff' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows an empty message when no other lists exist', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([{ _id: 'list-123', name: 'Cool Stuff' }]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+            ]),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+    await user.click(
+      screen.getByRole('button', { name: 'Move Task To A Different List' })
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Choose a list to move task(s) to',
+    });
+
+    expect(
+      within(dialog).getByText('No other lists available.')
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('button', { name: 'Cool Stuff' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('button', { name: 'Cancel' })
+    ).toBeInTheDocument();
+  });
+  it('closes on cancel without moving tasks or clearing selection', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+            ]),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+    await user.click(
+      screen.getByRole('button', { name: 'Move Task To A Different List' })
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Choose a list to move task(s) to',
+    });
+
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Choose a list to move task(s) to' })
+    ).not.toBeInTheDocument();
+    expect(taskOneCheckbox).toBeChecked();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+    expect(
+      screen.getByRole('cell', { name: 'Do a backflip' })
+    ).toBeInTheDocument();
+
+    // Verify the backend request
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.stringMatching(/\/move$/),
+      expect.objectContaining({ method: 'PATCH' })
+    );
+  });
+
+  it('closes when the backdrop is clicked', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+            ]),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+    await user.click(
+      screen.getByRole('button', { name: 'Move Task To A Different List' })
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Choose a list to move task(s) to',
+    });
+
+    await user.click(dialog.parentElement);
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Choose a list to move task(s) to' })
+    ).not.toBeInTheDocument();
+    expect(taskOneCheckbox).toBeChecked();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+
+    // Verify the backend request
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.stringMatching(/\/move$/),
+      expect.objectContaining({ method: 'PATCH' })
+    );
+  });
+
+  it('stays open when clicking inside the dialog', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+            ]),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+    await user.click(
+      screen.getByRole('button', { name: 'Move Task To A Different List' })
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Choose a list to move task(s) to',
+    });
+
+    await user.click(
+      within(dialog).getByRole('heading', {
+        name: 'Choose a list to move task(s) to',
+      })
+    );
+
+    expect(dialog).toBeInTheDocument();
+    expect(taskOneCheckbox).toBeChecked();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+
+    // Verify the backend request
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.stringMatching(/\/move$/),
+      expect.objectContaining({ method: 'PATCH' })
+    );
+  });
+
+  it('keeps a task in its original list when the move request fails', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-1235',
+                name: 'Do a frontflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-100',
+                name: 'Do a backfront flip',
+                listId: 'list-123',
+              },
+            ]),
+        });
+      }
+
+      if (
+        url === 'http://localhost:8000/tasks/task-123/move' &&
+        options.method === 'PATCH'
+      ) {
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          json: () =>
+            Promise.resolve({ message: 'Could not move task to a new list.' }),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+    const taskTwo = await screen.findByRole('cell', { name: 'Do a frontflip' });
+    const taskThree = await screen.findByRole('cell', {
+      name: 'Do a backfront flip',
+    });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+
+    const table = taskOne.closest('table');
+
+    await user.click(taskOneCheckbox);
+    await user.click(
+      screen.getByRole('button', { name: 'Move Task To A Different List' })
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Choose a list to move task(s) to',
+    });
+
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Other Stuff' })
+    );
+
+    // Verify the backend request
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:8000/tasks/task-123/move',
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ listId: 'list-456' }),
+        }
+      );
+    });
+
+    expect(
+      within(table).getByRole('cell', { name: 'Do a backflip' })
+    ).toBeInTheDocument();
+    expect(taskTwo).toBeInTheDocument();
+    expect(taskThree).toBeInTheDocument();
+
+    await user.click(screen.getByText('Lists'));
+
+    const listsSection = screen.getByText('Lists').closest('details');
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Other Stuff' })
+    );
+
+    expect(
+      screen.queryByRole('cell', { name: 'Do a backflip' })
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Cool Stuff' })
+    );
+
+    expect(
+      await screen.findByRole('cell', { name: 'Do a backflip' })
+    ).toBeInTheDocument();
+
+    expect(fetch).not.toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-1235/move',
+      expect.objectContaining({ method: 'PATCH' })
+    );
+    expect(fetch).not.toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-100/move',
+      expect.objectContaining({ method: 'PATCH' })
+    );
+  });
+  it('does not send a move request when the destination list ID is empty', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: '', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+            ]),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+    const table = taskOne.closest('table');
+
+    await user.click(taskOneCheckbox);
+
+    // verify that bulk action controls do appear
+    const moveButton = screen.getByRole('button', {
+      name: 'Move Task To A Different List',
+    });
+
+    await user.click(moveButton);
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Choose a list to move task(s) to',
+    });
+
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Other Stuff' })
+    );
+
+    expect(
+      within(table).getByRole('cell', { name: 'Do a backflip' })
+    ).toBeInTheDocument();
+
+    // Verify the backend request
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.stringMatching(/\/move$/),
+      expect.objectContaining({ method: 'PATCH' })
+    );
+  });
+});
+describe('switching lists', () => {
+  it('clears selection when switching lists', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-1235',
+                name: 'Do a frontflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-100',
+                name: 'Do a backfront flip',
+                listId: 'list-456',
+              },
+            ]),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+    const taskTwo = await screen.findByRole('cell', { name: 'Do a frontflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+    const taskTwoCheckbox = within(taskTwo.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+    await user.click(taskTwoCheckbox);
+
+    expect(taskOneCheckbox).toBeChecked();
+    expect(taskTwoCheckbox).toBeChecked();
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Lists'));
+
+    const listsSection = screen.getByText('Lists').closest('details');
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Other Stuff' })
+    );
+
+    const taskThree = await screen.findByRole('cell', {
+      name: 'Do a backfront flip',
+    });
+    const taskThreeCheckbox = within(taskThree.closest('tr')).getByRole(
+      'checkbox'
+    );
+
+    expect(taskThreeCheckbox).not.toBeChecked();
+    expect(screen.queryByText('2 selected')).not.toBeInTheDocument();
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Cool Stuff' })
+    );
+
+    const returnedTaskOne = await screen.findByRole('cell', {
+      name: 'Do a backflip',
+    });
+    const returnedTaskTwo = await screen.findByRole('cell', {
+      name: 'Do a frontflip',
+    });
+
+    expect(
+      within(returnedTaskOne.closest('tr')).getByRole('checkbox')
+    ).not.toBeChecked();
+    expect(
+      within(returnedTaskTwo.closest('tr')).getByRole('checkbox')
+    ).not.toBeChecked();
+    expect(screen.queryByText('2 selected')).not.toBeInTheDocument();
+  });
+
+  it('hides bulk controls after switching lists', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-100',
+                name: 'Do a backfront flip',
+                listId: 'list-456',
+              },
+            ]),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+
+    // verify that bulk action controls do appear
+    expect(
+      screen.getByRole('button', { name: 'Archive Selected Task' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Delete Selected Task' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Move Task To A Different List' })
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByText('Lists'));
+
+    const listsSection = screen.getByText('Lists').closest('details');
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Other Stuff' })
+    );
+
+    expect(
+      await screen.findByRole('cell', { name: 'Do a backfront flip' })
+    ).toBeInTheDocument();
+
+    // verify that bulk action controls do not appear
+    expect(
+      screen.queryByRole('button', { name: 'Archive Selected Task' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Delete Selected Task' })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Move Task To A Different List' })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('1 selected')).not.toBeInTheDocument();
+  });
+
+  it('does not apply bulk archive to tasks from the previous list', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-1235',
+                name: 'Do a frontflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-100',
+                name: 'Do a backfront flip',
+                listId: 'list-456',
+              },
+            ]),
+        });
+      }
+
+      // Successfully mark the task as archived
+      if (
+        url === 'http://localhost:8000/tasks/task-100/archive' &&
+        options.method === 'PUT'
+      ) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              _id: 'task-100',
+              name: 'Do a backfront flip',
+              listId: 'list-456',
+              archived: true,
+            }),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+    const taskTwo = await screen.findByRole('cell', { name: 'Do a frontflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+    const taskTwoCheckbox = within(taskTwo.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+    await user.click(taskTwoCheckbox);
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Lists'));
+
+    const listsSection = screen.getByText('Lists').closest('details');
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Other Stuff' })
+    );
+
+    const taskThree = await screen.findByRole('cell', {
+      name: 'Do a backfront flip',
+    });
+    const taskThreeCheckbox = within(taskThree.closest('tr')).getByRole(
+      'checkbox'
+    );
+    const table = taskThree.closest('table');
+
+    expect(taskThreeCheckbox).not.toBeChecked();
+
+    await user.click(taskThreeCheckbox);
+
+    expect(taskThreeCheckbox).toBeChecked();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+
+    // verify that bulk action controls do appear
+    const archiveButton = screen.getByRole('button', {
+      name: 'Archive Selected Task',
+    });
+
+    // click archive button
+    await user.click(archiveButton);
+
+    await waitFor(() => {
+      expect(
+        within(table).queryByRole('cell', { name: 'Do a backfront flip' })
+      ).not.toBeInTheDocument();
+    });
+
+    // Verify the backend request
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-100/archive',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ archived: true }),
+      })
+    );
+    expect(fetch).not.toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-123/archive',
+      expect.objectContaining({ method: 'PUT' })
+    );
+    expect(fetch).not.toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-1235/archive',
+      expect.objectContaining({ method: 'PUT' })
+    );
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Cool Stuff' })
+    );
+
+    expect(
+      await screen.findByRole('cell', { name: 'Do a backflip' })
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('cell', { name: 'Do a frontflip' })
+    ).toBeInTheDocument();
+  });
+
+  it('does not apply bulk delete to tasks from the previous list', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-1235',
+                name: 'Do a frontflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-100',
+                name: 'Do a backfront flip',
+                listId: 'list-456',
+              },
+            ]),
+        });
+      }
+
+      // Successfully mark the task as deleted
+      if (
+        url === 'http://localhost:8000/tasks/task-100/delete' &&
+        options.method === 'PUT'
+      ) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              _id: 'task-100',
+              name: 'Do a backfront flip',
+              listId: 'list-456',
+              deleted: true,
+            }),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+    const taskTwo = await screen.findByRole('cell', { name: 'Do a frontflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+    const taskTwoCheckbox = within(taskTwo.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+    await user.click(taskTwoCheckbox);
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Lists'));
+
+    const listsSection = screen.getByText('Lists').closest('details');
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Other Stuff' })
+    );
+
+    const taskThree = await screen.findByRole('cell', {
+      name: 'Do a backfront flip',
+    });
+    const taskThreeCheckbox = within(taskThree.closest('tr')).getByRole(
+      'checkbox'
+    );
+    const table = taskThree.closest('table');
+
+    expect(taskThreeCheckbox).not.toBeChecked();
+
+    await user.click(taskThreeCheckbox);
+
+    expect(taskThreeCheckbox).toBeChecked();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+
+    // verify that bulk action controls do appear
+    const deleteButton = screen.getByRole('button', {
+      name: 'Delete Selected Task',
+    });
+
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      expect(
+        within(table).queryByRole('cell', { name: 'Do a backfront flip' })
+      ).not.toBeInTheDocument();
+    });
+
+    // Verify the backend request
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-100/delete',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ deleted: true }),
+      })
+    );
+    expect(fetch).not.toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-123/delete',
+      expect.objectContaining({ method: 'PUT' })
+    );
+    expect(fetch).not.toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-1235/delete',
+      expect.objectContaining({ method: 'PUT' })
+    );
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Cool Stuff' })
+    );
+
+    expect(
+      await screen.findByRole('cell', { name: 'Do a backflip' })
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('cell', { name: 'Do a frontflip' })
+    ).toBeInTheDocument();
+  });
+
+  it('does not apply bulk move to tasks from the previous list', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetch).mockImplementation((url, options = {}) => {
+      if (url === 'http://localhost:8000/lists' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              { _id: 'list-123', name: 'Cool Stuff' },
+              { _id: 'list-456', name: 'Other Stuff' },
+            ]),
+        });
+      }
+
+      if (url === 'http://localhost:8000/tasks' && !options.method) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve([
+              {
+                _id: 'task-123',
+                name: 'Do a backflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-1235',
+                name: 'Do a frontflip',
+                listId: 'list-123',
+              },
+              {
+                _id: 'task-100',
+                name: 'Do a backfront flip',
+                listId: 'list-456',
+              },
+            ]),
+        });
+      }
+
+      if (
+        url === 'http://localhost:8000/tasks/task-100/move' &&
+        options.method === 'PATCH'
+      ) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              _id: 'task-100',
+              name: 'Do a backfront flip',
+              listId: 'list-123',
+            }),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+    });
+
+    render(<MyApp />);
+    // Validate that tasks exist.
+    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
+    const taskTwo = await screen.findByRole('cell', { name: 'Do a frontflip' });
+
+    // Find the checkboxes assosciated with each task.
+    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
+    const taskTwoCheckbox = within(taskTwo.closest('tr')).getByRole('checkbox');
+
+    await user.click(taskOneCheckbox);
+    await user.click(taskTwoCheckbox);
+
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Lists'));
+
+    const listsSection = screen.getByText('Lists').closest('details');
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Other Stuff' })
+    );
+
+    const taskThree = await screen.findByRole('cell', {
+      name: 'Do a backfront flip',
+    });
+    const taskThreeCheckbox = within(taskThree.closest('tr')).getByRole(
+      'checkbox'
+    );
+    const table = taskThree.closest('table');
+
+    expect(taskThreeCheckbox).not.toBeChecked();
+
+    await user.click(taskThreeCheckbox);
+
+    expect(taskThreeCheckbox).toBeChecked();
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+
+    // verify that bulk action controls do appear
+    const moveButton = screen.getByRole('button', {
+      name: 'Move Task To A Different List',
+    });
+
+    await user.click(moveButton);
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Choose a list to move task(s) to',
+    });
+
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Cool Stuff' })
+    );
+
+    await waitFor(() => {
+      expect(
+        within(table).queryByRole('cell', { name: 'Do a backfront flip' })
+      ).not.toBeInTheDocument();
+    });
+
+    // Verify the backend request
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-100/move',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ listId: 'list-123' }),
+      })
+    );
+    expect(fetch).not.toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-123/move',
+      expect.objectContaining({ method: 'PATCH' })
+    );
+    expect(fetch).not.toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-1235/move',
+      expect.objectContaining({ method: 'PATCH' })
+    );
+
+    await user.click(
+      within(listsSection).getByRole('button', { name: 'Cool Stuff' })
+    );
+
+    expect(
+      await screen.findByRole('cell', { name: 'Do a backflip' })
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('cell', { name: 'Do a frontflip' })
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('cell', { name: 'Do a backfront flip' })
+    ).toBeInTheDocument();
+  });
+});
