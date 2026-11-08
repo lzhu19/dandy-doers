@@ -16,7 +16,7 @@ import {
   restoreArchivedTask,
   getDeletedTasks,
   restoreDeletedTask,
-  updateTaskListId
+  updateTaskListId,
 } from './task-services.js';
 
 const taskId = '507f1f77bcf86cd799439011';
@@ -595,9 +595,9 @@ describe('restoreDeletedTask', () => {
 });
 
 describe('updateTaskListId', () => {
-  it('sucessfully updates a task list id to the destination list id', async () =>{
-     const destinationListId = '507f191e810c19729de860eb';
-     const updatedTask = {
+  it('sucessfully updates a task list id to the destination list id', async () => {
+    const destinationListId = '507f191e810c19729de860eb';
+    const updatedTask = {
       ...sampleTask,
       listId: destinationListId,
     };
@@ -609,7 +609,7 @@ describe('updateTaskListId', () => {
 
     expect(task.listId.toString()).toBe(destinationListId);
     expect(task._id.toString()).toBe(taskId);
-})
+  });
   it('returns null when no task matches the given ID', async () => {
     const destinationListId = '507f191e810c19729de860eb';
     const save = jest.spyOn(Task.prototype, 'save');
@@ -629,9 +629,9 @@ describe('updateTaskListId', () => {
     mockingoose(Task).toReturn(sampleTask, 'findOne');
     mockingoose(Task).toReturn(new Error('Update list id failed'), 'save');
 
-    await expect(
-      updateTaskListId(taskId, destinationListId)
-    ).rejects.toThrow('Update list id failed');
+    await expect(updateTaskListId(taskId, destinationListId)).rejects.toThrow(
+      'Update list id failed'
+    );
   });
 
   it('propagates an error when looking up the task fails', async () => {
@@ -639,8 +639,8 @@ describe('updateTaskListId', () => {
 
     mockingoose(Task).toReturn(new Error('Update lookup failed'), 'findOne');
 
-    await expect(
-      updateTaskListId(taskId, destinationListId)
-    ).rejects.toThrow('Update lookup failed');
+    await expect(updateTaskListId(taskId, destinationListId)).rejects.toThrow(
+      'Update lookup failed'
+    );
   });
 });

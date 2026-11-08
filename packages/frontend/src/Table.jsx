@@ -56,7 +56,7 @@ function BulkActions(props) {
       </button>
       <button
         className="archive-icon-button"
-        aria-label="Archive Task"
+        aria-label="Archive Selected Task"
         onClick={() => {
           props.selectedTaskId.forEach((id) => {
             props.archiveTask(id);
@@ -68,7 +68,7 @@ function BulkActions(props) {
       </button>
       <button
         className="archive-icon-button"
-        aria-label="Delete Task"
+        aria-label="Delete Selected Task"
         onClick={() => {
           props.selectedTaskId.forEach((id) => {
             props.removeTask(id);

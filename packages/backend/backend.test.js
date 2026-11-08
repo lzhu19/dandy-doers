@@ -41,7 +41,7 @@ const {
   archiveTask,
   restoreArchivedTask,
   restoreDeletedTask,
-  updateTaskListId
+  updateTaskListId,
 } = await import('./task-services.js');
 const { getLists, findListById, addList, deleteList, updateListName } =
   await import('./list-services.js');
@@ -833,45 +833,51 @@ describe('/tasks/:id/move', () => {
   it('successfully moves the task to destination list', async () => {
     const list = {
       _id: 'list-1',
-      name: 'Groceries'
-    }
+      name: 'Groceries',
+    };
     const task = {
       _id: 'task-1',
       name: 'Move this Task',
       selected: true,
-      listId: list._id
+      listId: list._id,
     };
 
-     findListById.mockResolvedValueOnce(list);
-     updateTaskListId.mockResolvedValueOnce(task);
+    findListById.mockResolvedValueOnce(list);
+    updateTaskListId.mockResolvedValueOnce(task);
 
-     const response = await request(app).patch('/tasks/task-1/move').send({listId:'list-1'});
+    const response = await request(app)
+      .patch('/tasks/task-1/move')
+      .send({ listId: 'list-1' });
 
-     expect(findListById).toHaveBeenCalledWith('list-1');
-     expect(updateTaskListId).toHaveBeenCalledWith('task-1', 'list-1');
-     expect(response.status).toBe(200);
-     expect(response.body).toEqual(task);
+    expect(findListById).toHaveBeenCalledWith('list-1');
+    expect(updateTaskListId).toHaveBeenCalledWith('task-1', 'list-1');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(task);
   });
   it('returns 404 when the destination list id does not exist', async () => {
     findListById.mockResolvedValueOnce(null);
 
-    const response = await request(app).patch('/tasks/task-1/move').send({listId: 'missing-list'});
+    const response = await request(app)
+      .patch('/tasks/task-1/move')
+      .send({ listId: 'missing-list' });
 
     expect(findListById).toHaveBeenCalledWith('missing-list');
     expect(updateTaskListId).not.toHaveBeenCalled();
     expect(response.status).toBe(404);
-    expect(response.text).toBe('List not found.')
+    expect(response.text).toBe('List not found.');
   });
   it('returns 404 when the task is not found', async () => {
     const list = {
       _id: 'list-1',
-      name: 'Groceries'
-    }
+      name: 'Groceries',
+    };
 
     findListById.mockResolvedValueOnce(list);
     updateTaskListId.mockResolvedValueOnce(null);
 
-    const response = await request(app).patch('/tasks/missing-task/move').send({listId:'list-1'});
+    const response = await request(app)
+      .patch('/tasks/missing-task/move')
+      .send({ listId: 'list-1' });
 
     expect(findListById).toHaveBeenCalledWith('list-1');
     expect(updateTaskListId).toHaveBeenCalledWith('missing-task', 'list-1');
@@ -881,17 +887,16 @@ describe('/tasks/:id/move', () => {
   it('returns 500 when there is a task update service error', async () => {
     const list = {
       _id: 'list-1',
-      name: 'Groceries'
-    }
+      name: 'Groceries',
+    };
     const error = new Error('Database unavailable');
 
     findListById.mockResolvedValueOnce(list);
     updateTaskListId.mockRejectedValueOnce(error);
 
     await expectLoggedServerError(
-      request(app).patch('/tasks/task-1/move')
-      .send({listId:'list-1'}),
-      error, 
+      request(app).patch('/tasks/task-1/move').send({ listId: 'list-1' }),
+      error,
       'Could not move task to a new list: ',
       'Could not move task to a new list.'
     );
@@ -902,12 +907,11 @@ describe('/tasks/:id/move', () => {
     findListById.mockRejectedValueOnce(error);
 
     await expectLoggedServerError(
-      request(app).patch('/tasks/task-1/move')
-      .send({listId:'list-1'}),
-      error, 
+      request(app).patch('/tasks/task-1/move').send({ listId: 'list-1' }),
+      error,
       'Could not find destination list id: ',
       'Could not find destination list id.'
     );
     expect(updateTaskListId).not.toHaveBeenCalled();
   });
-})
+});
