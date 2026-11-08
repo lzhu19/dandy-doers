@@ -3481,8 +3481,6 @@ describe('select all', () => {
 
 describe('bulk action controls', () => {
   it('hides the controls when no tasks are selected', async () => {
-    const user = userEvent.setup();
-
     vi.mocked(fetch).mockImplementation((url, options = {}) => {
       // Return the School list
       if (url === 'http://localhost:8000/lists' && !options.method) {
@@ -4658,3 +4656,4 @@ describe('bulk deleting', () => {
     );
   });
 });
+
