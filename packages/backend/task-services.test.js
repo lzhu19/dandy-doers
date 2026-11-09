@@ -16,6 +16,7 @@ import {
   restoreArchivedTask,
   getDeletedTasks,
   restoreDeletedTask,
+  updateTaskListId,
 } from './task-services.js';
 
 const taskId = '507f1f77bcf86cd799439011';
@@ -589,6 +590,57 @@ describe('restoreDeletedTask', () => {
 
     await expect(restoreDeletedTask(taskId)).rejects.toThrow(
       'Deleted task lookup failed'
+    );
+  });
+});
+
+describe('updateTaskListId', () => {
+  it('sucessfully updates a task list id to the destination list id', async () => {
+    const destinationListId = '507f191e810c19729de860eb';
+    const updatedTask = {
+      ...sampleTask,
+      listId: destinationListId,
+    };
+
+    mockingoose(Task).toReturn(sampleTask, 'findOne');
+    mockingoose(Task).toReturn(updatedTask, 'save');
+
+    const task = await updateTaskListId(taskId, destinationListId);
+
+    expect(task.listId.toString()).toBe(destinationListId);
+    expect(task._id.toString()).toBe(taskId);
+  });
+  it('returns null when no task matches the given ID', async () => {
+    const destinationListId = '507f191e810c19729de860eb';
+    const save = jest.spyOn(Task.prototype, 'save');
+
+    mockingoose(Task).toReturn(null, 'findOne');
+    mockingoose(Task).toReturn(null, 'save');
+
+    const task = await updateTaskListId(taskId, destinationListId);
+
+    expect(save).not.toHaveBeenCalled();
+    expect(task).toBeNull();
+  });
+
+  it('propagates an error when saving the update fails', async () => {
+    const destinationListId = '5507f191e810c19729de860eb';
+
+    mockingoose(Task).toReturn(sampleTask, 'findOne');
+    mockingoose(Task).toReturn(new Error('Update list id failed'), 'save');
+
+    await expect(updateTaskListId(taskId, destinationListId)).rejects.toThrow(
+      'Update list id failed'
+    );
+  });
+
+  it('propagates an error when looking up the task fails', async () => {
+    const destinationListId = '5507f191e810c19729de860eb';
+
+    mockingoose(Task).toReturn(new Error('Update lookup failed'), 'findOne');
+
+    await expect(updateTaskListId(taskId, destinationListId)).rejects.toThrow(
+      'Update lookup failed'
     );
   });
 });
