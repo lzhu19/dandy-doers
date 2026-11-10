@@ -24,14 +24,17 @@ function SearchBar(props) {
   }
   return (
     <>
-      <input
-        ref={searchInput}
-        type="text"
-        id="myInput"
-        onChange={searchTask}
-        placeholder="Search for a task! ✎ ̼"
-        title="Type in a task"
-      ></input>
+      <search className="search-bar">
+        <input
+          ref={searchInput}
+          type="search"
+          id="myInput"
+          onChange={searchTask}
+          placeholder="Search for a task! ✎ ̼"
+          className="search-bar"
+          aria-label="Search for a task"
+        ></input>
+      </search>
       <ul id="myTasks">
         {props.taskData.map((task) => (
           <li
