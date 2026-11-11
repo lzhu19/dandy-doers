@@ -7,6 +7,9 @@ import DeleteList from './DeleteList';
 import ListSection from './ListSection';
 import SearchBar from './SearchBar';
 import TaskDetails from './TaskDetails';
+import Login from './Login';
+
+const INVALID_TOKEN = 'Invalid token';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
@@ -33,13 +36,76 @@ function MyApp() {
   const [deletedTasks, setDeletedTasks] = useState([]);
   const [isMoveTaskOpen, setIsMoveTaskOpen] = useState(false);
 
+  const [token, setToken] = useState(INVALID_TOKEN);
+  const [message, setMessage] = useState('');
+
+  function addAuthHeader(otherHeaders = {}) {
+    if (token === INVALID_TOKEN) {
+      return otherHeaders;
+    } else {
+      return {
+        ...otherHeaders,
+        Authorization: `Bearer ${token}`,
+      };
+    }
+  }
+
+  function loginUser(creds) {
+    return fetch(`http://localhost:8000/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(creds),
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          setMessage('');
+          return response.json().then((payload) => setToken(payload.token));
+        }
+        setMessage('Login failed. Incorrect username or password.');
+      })
+      .catch((error) => {
+        setMessage(`Login Error: ${error}`);
+      });
+  }
+
+  function signupUser(creds) {
+    return fetch(`http://localhost:8000/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(creds),
+    })
+      .then((response) => {
+        if (response.status === 201) {
+          setMessage('');
+          return response.json().then((payload) => setToken(payload.token));
+        }
+        if (response.status === 409) {
+          setMessage(
+            'Username already exists, time to channel that creativity.'
+          );
+        } else {
+          setMessage(
+            `Sign up failed. Please enter a valid username and password.`
+          );
+        }
+      })
+      .catch((error) => setMessage(`Signup Error: ${error}`));
+  }
+
   function fetchTasks() {
-    const promise = fetch('http://localhost:8000/tasks');
-    return promise;
+    return fetch('http://localhost:8000/tasks', {
+      headers: addAuthHeader(),
+    });
   }
 
   function fetchLists() {
-    return fetch('http://localhost:8000/lists');
+    return fetch('http://localhost:8000/lists', {
+      headers: addAuthHeader(),
+    });
   }
 
   async function createList(event) {
@@ -438,6 +504,7 @@ function MyApp() {
   }
 
   useEffect(() => {
+    if (token === INVALID_TOKEN) return;
     fetchTasks()
       .then((res) => res.json()) // convert response to json
       .then((tasks) => {
@@ -472,7 +539,7 @@ function MyApp() {
       .catch((error) => {
         console.log(error);
       });
-  }, []); // empty array here indicates that hook should be called only when component first mounts
+  }, [token]);
 
   const currentList =
     lists.find((list) => list._id === selectedListId) ?? lists[0];
@@ -536,6 +603,16 @@ function MyApp() {
     } catch (error) {
       console.error('Could not save task order:', error);
     }
+  }
+
+  if (token === INVALID_TOKEN) {
+    return (
+      <Login
+        handleLogin={loginUser}
+        handleSignup={signupUser}
+        message={message}
+      />
+    );
   }
 
   return (
