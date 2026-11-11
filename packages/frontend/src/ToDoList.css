@@ -730,6 +730,32 @@ tr.drop-target td {
   box-shadow: none;
 }
 
+.popup {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  background-color: #9e8eab;
+  color: #3a3042;
+  padding: 15px 25px;
+  border-radius: 8px;
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  animation: fadeIn 0.3s ease-in;
+}
+.undo-button {
+  background: none;
+  border: none;
+  color: #ffdf8c;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: inherit;
+}
+
+.undo-button:hover {
+  color: #c7ab64;
+  text-decoration: underline;
+}
+
 search.search-bar {
   border: none;
   padding: 0;
