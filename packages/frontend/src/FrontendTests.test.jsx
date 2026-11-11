@@ -1361,7 +1361,7 @@ describe('list dialog workflows', () => {
     );
     await openApp();
 
-    await user.click(screen.getAllByRole('button', { name: 'School' })[1]);
+    await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'School' }));
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
     await user.clear(renameInput);
     fireEvent.blur(renameInput);
@@ -1384,7 +1384,7 @@ describe('list dialog workflows', () => {
     );
     await openApp();
 
-    await user.click(screen.getAllByRole('button', { name: 'School' })[1]);
+    await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'School' }));
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
     await user.clear(renameInput);
     await user.type(renameInput, renamedList.name);

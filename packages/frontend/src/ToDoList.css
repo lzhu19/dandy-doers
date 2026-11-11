@@ -1,5 +1,7 @@
 .main-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: 388px minmax(0, 1fr);
+  grid-template-areas: "sidebar main";
   min-height: 100vh;
   background: #fffbf2;
 }
@@ -19,8 +21,7 @@ tr.drop-target td {
 }
 
 .sidebar {
-  width: 388px;
-  flex-shrink: 0;
+  grid-area: sidebar;
   background: #3a3042;
   border-radius: 0 30px 30px 0;
   padding: 40px 30px;
@@ -178,6 +179,7 @@ tr.drop-target td {
 }
 
 .main-content {
+  grid-area: main;
   flex: 1;
   padding: 60px;
   color: #3a3042;

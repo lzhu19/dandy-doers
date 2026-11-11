@@ -24,7 +24,6 @@ function TableHeader(props) {
           </label>
         </th>
         <th>Task</th>
-        <th></th>
       </tr>
     </thead>
   );

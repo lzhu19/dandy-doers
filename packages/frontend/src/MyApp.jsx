@@ -541,33 +541,6 @@ function MyApp() {
   return (
     <>
       <div className="main-layout">
-        <aside className="sidebar">
-          <div className="profile-icon" aria-hidden="true" />
-
-          <div>
-            <h2 className="sidebar-section-title">Upcoming</h2>
-            <div className="upcoming-box">
-              <p className="upcoming-empty-text">No upcoming tasks</p>
-            </div>
-          </div>
-
-          <div>
-            <ListSection
-              lists={lists}
-              selectedListId={currentList?._id}
-              onSelectList={setSelectedListId}
-              setSelectedTaskId={setSelectedTaskId}
-            />
-            <button
-              className="add-list-button"
-              type="button"
-              onClick={openCreateListDialog}
-            >
-              + Add List
-            </button>
-          </div>
-        </aside>
-
         <main className="main-content">
           {lists.length === 0 ? (
             <section className="empty-list-state">
@@ -671,8 +644,35 @@ function MyApp() {
             </>
           )}
         </main>
-      </div>
+      
+        <aside className="sidebar">
+          <div className="profile-icon" aria-hidden="true" />
 
+          <div>
+            <h2 className="sidebar-section-title">Upcoming</h2>
+            <div className="upcoming-box">
+              <p className="upcoming-empty-text">No upcoming tasks</p>
+            </div>
+          </div>
+
+          <div>
+            <ListSection
+              lists={lists}
+              selectedListId={currentList?._id}
+              onSelectList={setSelectedListId}
+              setSelectedTaskId={setSelectedTaskId}
+            />
+            <button
+              className="add-list-button"
+              type="button"
+              onClick={openCreateListDialog}
+            >
+              + Add List
+            </button>
+          </div>
+        </aside>
+      </div>
+      
       {isCreateListOpen && (
         <div className="list-dialog-backdrop">
           <section
