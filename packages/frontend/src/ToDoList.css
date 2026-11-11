@@ -208,14 +208,26 @@ tr.drop-target td {
   cursor: pointer;
   font: inherit;
   letter-spacing: inherit;
-  padding: 0;
+  padding: 4px;
   text-align: left;
+}
+
+.main-header-title-button:focus-visible {
+  outline: 5px solid black;
+  text-decoration: underline;
 }
 
 .main-header-title input {
   color: inherit;
   font: inherit;
   letter-spacing: inherit;
+}
+
+.main-header-title input:focus-visible {
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-decoration: underline;
 }
 
 .header-underline {
@@ -542,6 +554,14 @@ tr.drop-target td {
   margin: 0;
   cursor: pointer;
   color: #ea3636;
+}
+
+.delete-list-icon-button:focus-visible {
+  background-color: #ab2121;
+  color: #fffbf2;
+  outline: 3px solid black;
+  box-shadow: 0 0 0 3px #ab2121;
+  outline-offset: 3px;
 }
 
 .delete-list-icon-button svg {
