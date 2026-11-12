@@ -1414,6 +1414,123 @@ describe('list dialog workflows', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
   });
+   it('closes the create dialog through cancel and clears its input', async () => {
+    const user = userEvent.setup();
+    installApi();
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: '+ Add List' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a list' });
+    await user.type(within(dialog).getByRole('textbox', { name: 'List name' }), 'Temporary list');
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(screen.queryByRole('dialog', { name: 'Create a list' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '+ Add List' }));
+    expect(screen.getByRole('textbox', { name: 'List name' })).toHaveValue('');
+  });
+
+  it('closes the delete dialog through cancel without deleting the list', async () => {
+    const user = userEvent.setup();
+    installApi();
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: 'Delete List' }));
+    const dialog = screen.getByRole('dialog', { name: 'Permanently delete list?' });
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(screen.queryByRole('dialog', { name: 'Permanently delete list?' })).not.toBeInTheDocument();
+    expect(within(screen.getByRole('main')).getByRole('button', { name: 'School' })).toBeInTheDocument();
+  });
+    it('keeps the create dialog open when cancelled while creating', async () => {
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const { routes } = installApi({ lists: [list, secondList] });
+
+    let finishRequest;
+    routes.set('POST http://localhost:8000/lists', async () => {
+      await new Promise((resolve) => {
+        finishRequest = resolve;
+      });
+      return jsonResponse({}, 500);
+    });
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: '+ Add List' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a list' });
+    await user.type(within(dialog).getByRole('textbox', { name: 'List name' }), 'New list');
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
+
+    expect(within(dialog).getByRole('button', { name: 'Creating...' })).toBeDisabled();
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(dialog).toHaveAttribute('open');
+    expect(within(dialog).getByRole('textbox', { name: 'List name' })).toHaveValue('New list');
+
+    finishRequest();
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+  });
+  it('keeps the delete dialog open when cancelled while deleting', async () => {
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const { routes } = installApi({ lists: [list, secondList] });
+
+    let finishRequest;
+    routes.set('DELETE http://localhost:8000/lists/list-1', async () => {
+      await new Promise((resolve) => {
+        finishRequest = resolve;
+      });
+      return jsonResponse({}, 500);
+    });
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: 'Delete List' }));
+    const dialog = screen.getByRole('dialog', { name: 'Permanently delete list?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Permanently Delete' }));
+
+    expect(within(dialog).getByRole('button', { name: 'Deleting...' })).toBeDisabled();
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(dialog).toHaveAttribute('open');
+
+    finishRequest();
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+  });
+    it('keeps the delete dialog open when the list name updates', async () => {   // the test below is to test skipping opening dialog, where dialog is true and !dialog is false
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const renamedList = { ...list, name: 'Classes' };
+    const { routes } = installApi({ lists: [list, secondList] });
+    routes.set('PUT http://localhost:8000/lists/list-1', async () =>
+      jsonResponse(renamedList)
+    );
+    await openApp();
+
+    await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'School' }));
+    const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
+    await user.clear(renameInput);
+    await user.type(renameInput, 'Classes');
+
+    fireEvent.blur(renameInput);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete List' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Permanently delete list?' });
+
+    expect(await within(dialog).findByText(/Classes/)).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('open');
+  });
 });
 
 //Tests list switching

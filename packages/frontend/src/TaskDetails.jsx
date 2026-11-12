@@ -8,8 +8,6 @@ function TaskDetails(props) {
 
   useEffect(() => {
     const dialog = detailsDialogRef.current;
-    if (!dialog) return;
-
     dialog.showModal();
 
     return () => {

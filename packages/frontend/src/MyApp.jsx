@@ -541,7 +541,6 @@ function MyApp() {
 const createListDialogRef = useRef(null);
 useEffect(() => {
   const dialog = createListDialogRef.current;
-  if (!dialog) return;
 
   if (isCreateListOpen && !dialog.open) {
     dialog.showModal();
@@ -553,7 +552,6 @@ useEffect(() => {
 const deleteListDialogRef = useRef(null);
 useEffect(() => {
   const dialog = deleteListDialogRef.current;
-  if (!dialog) return;
 
   if (isDeleteListOpen && currentList) {
     if (!dialog.open) dialog.showModal();
