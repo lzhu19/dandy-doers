@@ -121,9 +121,9 @@ function MyApp() {
     try {
       const response = await fetch('http://localhost:8000/lists', {
         method: 'POST',
-        headers: {
+        headers: addAuthHeader({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ name }),
       });
       if (response.status !== 201) {
@@ -155,7 +155,7 @@ function MyApp() {
     try {
       const response = await fetch(
         `http://localhost:8000/lists/${currentList._id}`,
-        { method: 'DELETE' }
+        { method: 'DELETE', headers: addAuthHeader() }
       );
       if (response.status !== 204) {
         throw new Error(`Unable to delete list (${response.status}).`);
@@ -188,9 +188,9 @@ function MyApp() {
   function postTask(job) {
     const promise = fetch('http://localhost:8000/tasks', {
       method: 'POST',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ ...job, listId: selectedListId }),
     });
     return promise;
@@ -201,9 +201,9 @@ function MyApp() {
     console.log('Archive clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/archive`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ archived: true }),
     });
 
@@ -236,9 +236,9 @@ function MyApp() {
     console.log('Delete clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/delete`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ deleted: true }),
     });
 
@@ -276,9 +276,9 @@ function MyApp() {
       `http://localhost:8000/tasks/${id}/restore-archived`,
       {
         method: 'PUT',
-        headers: {
+        headers: addAuthHeader({
           'Content-type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ archived: false }),
       }
     );
@@ -306,9 +306,9 @@ function MyApp() {
     console.log('Restore deleted clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/restore-deleted`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ deleted: false }),
     });
 
@@ -334,6 +334,7 @@ function MyApp() {
     // removes a task with the given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
       method: 'DELETE',
+      headers: addAuthHeader(),
     });
 
     promise
@@ -360,9 +361,9 @@ function MyApp() {
     // updates a task's name for given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ name: newEdit }),
     });
 
@@ -396,9 +397,9 @@ function MyApp() {
     // updates a task's name and notes for given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify(updatedFields),
     });
 
@@ -431,9 +432,9 @@ function MyApp() {
     try {
       const response = await fetch(`http://localhost:8000/lists/${id}`, {
         method: 'PUT',
-        headers: {
+        headers: addAuthHeader({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ name }),
       });
       if (response.status !== 200) {
@@ -473,9 +474,9 @@ function MyApp() {
 
     return fetch(`http://localhost:8000/tasks/${id}/move`, {
       method: 'PATCH',
-      headers: {
+      headers: addAuthHeader({
         'Content-Type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ listId: targetListId }),
     })
       .then((response) => {
@@ -586,9 +587,9 @@ function MyApp() {
         `http://localhost:8000/lists/${currentList._id}/reorder-tasks`,
         {
           method: 'PUT',
-          headers: {
+          headers: addAuthHeader({
             'Content-Type': 'application/json',
-          },
+          }),
           body: JSON.stringify({
             taskIds: reordered.map((task) => task._id),
           }),
