@@ -192,7 +192,7 @@ const dismissPopupForTask = (id) => {
             previous.filter((taskId) => taskId !== id)
           );
           displayPopup(
-            "Task archived successfully!",
+            "Task archived",
             () => restoreArchivedTask(id),
             id
           );
@@ -236,7 +236,7 @@ const dismissPopupForTask = (id) => {
           );
 
           displayPopup(
-            "Task deleted successfully!",
+            "Task deleted",
             () => restoreDeletedTask(id),
             id
           );

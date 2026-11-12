@@ -734,25 +734,33 @@ tr.drop-target td {
   position: fixed;
   bottom: 25px;
   right: 25px;
-  background-color: #9e8eab;
-  color: #3a3042;
-  padding: 15px 25px;
-  border-radius: 8px;
+  background-color: #3a3042;
+  color: #fffbf2;
+  padding: 10px 15px;
+  border-radius: 15px;
   z-index: 1000;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   animation: fadeIn 0.3s ease-in;
+  display: flex;
+  align-items: center;
+  gap: 30px;
 }
 .undo-button {
   background: none;
-  border: none;
-  color: #ffdf8c;
+  background-color: #fffbf2;
+  color: #3a3042;
   font-weight: bold;
   cursor: pointer;
   font-size: inherit;
+  padding: 12px 30px;
+  border-radius: 15px;
+  border: none;
 }
 
 .undo-button:hover {
-  color: #c7ab64;
+  color: #3a3042;
+  background-color:  #fffbf2;
+  border: none;
   text-decoration: underline;
 }
 
