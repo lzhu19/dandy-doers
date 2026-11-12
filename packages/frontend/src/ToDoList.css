@@ -54,6 +54,10 @@ tr.drop-target td {
   cursor: pointer;
 }
 
+.lists-section summary:focus-visible {
+  text-decoration: underline;
+}
+
 .lists-section ul {
   margin: 0;
   padding: 0;
@@ -84,6 +88,10 @@ tr.drop-target td {
   border: none;
   outline: none;
   box-shadow: none;
+}
+
+.user-list-select:focus-visible {
+  text-decoration: underline;
 }
 
 .user-list-select:hover {
@@ -162,6 +170,13 @@ tr.drop-target td {
   box-shadow: none;
 }
 
+.add-list-button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+  text-decoration: underline;
+
+}
+
 .add-list-button:hover {
   background: #806e8e;
   color: #3a3042;
@@ -213,7 +228,8 @@ tr.drop-target td {
 }
 
 .main-header-title-button:focus-visible {
-  outline: 5px solid black;
+  outline: 3px solid #3a3042;
+  outline-offset: 2px;
   text-decoration: underline;
 }
 
@@ -342,6 +358,16 @@ tr.drop-target td {
   border: none;
   outline: none;
   box-shadow: none;
+}
+
+.add-task-button:focus-visible {
+  background: #a16207;
+  color: #fff;
+  border: none;
+  box-shadow: 0 0 0 3px #a16207;
+  outline: 3px solid #3a3042;
+  text-decoration: underline;
+  outline-offset: 3px;
 }
 
 .add-task-button:hover {
@@ -485,6 +511,16 @@ tr.drop-target td {
   color: #777676;
 }
 
+.archive-icon-button:focus-visible,
+.delete-icon-button:focus-visible,
+.edit-icon-button:focus-visible {
+  background-color: #594b65;
+  color: #fff;
+  box-shadow: 0 0 0 3px #594b65;
+  outline: 3px solid #3a3042;
+  outline-offset: 3px;
+}
+
 .archive-icon-button:active,
 .delete-icon-button:active,
 .edit-icon-button:active {
@@ -533,6 +569,12 @@ tr.drop-target td {
   transition: transform 0.15s ease;
 }
 
+.archived-section summary:focus-visible,
+.deleted-section summary:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 .archived-section[open] summary::before,
 .deleted-section[open] summary::before {
   transform: rotate(90deg);
@@ -557,10 +599,10 @@ tr.drop-target td {
 }
 
 .delete-list-icon-button:focus-visible {
-  background-color: #ab2121;
-  color: #fffbf2;
-  outline: 3px solid black;
-  box-shadow: 0 0 0 3px #ab2121;
+  background-color: #594b65;
+  color: #fff;
+  box-shadow: 0 0 0 3px #594b65;
+  outline: 3px solid #3a3042;
   outline-offset: 3px;
 }
 
@@ -755,6 +797,16 @@ tr.drop-target td {
 search.search-bar {
   border: none;
   padding: 0;
+}
+
+.search-list-buttons button {
+  padding: 0;
+}
+
+.search-list-buttons button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 input.search-bar {
