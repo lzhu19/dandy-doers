@@ -1,9 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 function TaskDetails(props) {
   //start w/ clicked task's current vals
   const [name, setName] = useState(props.task.name);
   const [notes, setNotes] = useState(props.task.notes ?? '');
+  const detailsDialogRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = detailsDialogRef.current;
+    if (!dialog) return;
+
+    dialog.showModal();
+
+    return () => {
+      dialog.close();
+    };
+  }, []);
+
 
   function handleSave() {
     if (!name.trim()) return;
@@ -11,14 +24,16 @@ function TaskDetails(props) {
   }
 
   return (
-    <div className="task-details-bg" onClick={props.closeTaskDetails}>
-      <section
-        className="task-details-popup"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Task details"
-        onClick={(event) => event.stopPropagation()}
-      >
+    <dialog
+      ref={detailsDialogRef}
+      className="task-details-popup"
+      aria-labelledby="task-details-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        detailsDialogRef.current.close();
+        props.closeTaskDetails();
+      }}
+    >
         {/* 
         task-details-header: whole top row of pop up
         task-details-heading: left side - title
@@ -26,13 +41,18 @@ function TaskDetails(props) {
         */}
         <div className="task-details-header">
           <div className="task-details-heading">
-            <h2 className="task-details-title">Task details</h2>
+            <h2 className="task-details-title" id="task-details-title">
+              Task details
+            </h2>
           </div>
           <div className="task-details-buttons">
             <button
               className="task-details-cancel"
               type="button"
-              onClick={props.closeTaskDetails}
+              onClick={() => {
+              detailsDialogRef.current.close();
+              props.closeTaskDetails();
+              }}
             >
               Cancel
             </button>
@@ -71,8 +91,7 @@ function TaskDetails(props) {
             onChange={(event) => setNotes(event.target.value)}
           />
         </div>
-      </section>
-    </div>
+      </dialog>
   );
 }
 

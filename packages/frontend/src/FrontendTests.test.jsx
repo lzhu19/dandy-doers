@@ -163,6 +163,22 @@ afterAll(() => {
   vi.unstubAllGlobals();
 });
 
+// Test for open/closed dialog.
+if (typeof HTMLDialogElement.prototype.showModal !== 'function') {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '');
+  };
+}
+
+if (typeof HTMLDialogElement.prototype.close !== 'function') {
+  HTMLDialogElement.prototype.close = function () {
+    if (!this.open) return;
+
+    this.removeAttribute('open');
+    this.dispatchEvent(new Event('close'));
+  };
+}
+
 //Tests
 //Rendering
 describe('rendering', () => {
@@ -1613,6 +1629,28 @@ describe('TaskDetails component', () => {
       notes: 'Pages 1-10',
     });
   });
+  it('closes task details with cancel', () => {
+  const closeTaskDetails = vi.fn();
+  const saveTaskDetails = vi.fn();
+
+  render(
+    <TaskDetails
+      task={{ _id: 'task-1', name: 'Study', notes: '' }}
+      closeTaskDetails={closeTaskDetails}
+      saveTaskDetails={saveTaskDetails}
+    />
+  );
+
+  const dialog = screen.getByRole('dialog', { name: 'Task details' });
+  const cancelEvent = new Event('cancel', { cancelable: true });
+
+  fireEvent(dialog, cancelEvent);
+
+  expect(cancelEvent.defaultPrevented).toBe(true);
+  expect(dialog).not.toHaveAttribute('open');
+  expect(closeTaskDetails).toHaveBeenCalledTimes(1);
+  expect(saveTaskDetails).not.toHaveBeenCalled();
+});
 });
 
 describe('DeleteList', () => {
@@ -2719,25 +2757,6 @@ describe('taskDetails', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
   //
-  it('closes the popup when bg is clicked', async () => {
-    const user = userEvent.setup();
-    const popup = await OpenTaskDetails(user);
-
-    await user.click(popup.parentElement);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('keeps popup open when clicking inside it', async () => {
-    const user = userEvent.setup();
-    const popup = await OpenTaskDetails(user);
-
-    await user.click(
-      within(popup).getByRole('heading', { name: 'Task details' })
-    );
-    expect(
-      screen.queryByRole('dialog', { name: 'Task details' })
-    ).toBeInTheDocument();
-  });
 
   it('updates the task after successfully saving its details', async () => {
     const user = userEvent.setup();
@@ -4770,14 +4789,19 @@ describe('bulk moving', () => {
 
     await user.click(moveButton);
 
-    const dialog = screen.getByRole('dialog', {
-      name: 'Choose a list to move task(s) to',
-    });
+    const dialog = screen.getByRole('dialog', {name: 'Choose a list to move task(s) to',});
 
-    await user.click(
-      within(dialog).getByRole('button', { name: 'Other Stuff' })
-    );
+    dialog.removeAttribute('open');
+    fireEvent(dialog, new Event('close'));
 
+    expect(screen.queryByRole('dialog', {name: 'Choose a list to move task(s) to',})).not.toBeInTheDocument();
+
+    await user.click(moveButton);
+
+    expect(dialog).toHaveAttribute('open');
+
+    await user.click(within(dialog).getByRole('button', { name: 'Other Stuff' }));
+    
     await waitFor(() => {
       expect(
         within(table).queryByRole('cell', { name: 'Do a backflip' })
@@ -5093,71 +5117,6 @@ describe('bulk moving', () => {
     expect(
       screen.getByRole('cell', { name: 'Do a backflip' })
     ).toBeInTheDocument();
-
-    // Verify the backend request
-    expect(fetch).not.toHaveBeenCalledWith(
-      expect.stringMatching(/\/move$/),
-      expect.objectContaining({ method: 'PATCH' })
-    );
-  });
-
-  it('closes when the backdrop is clicked', async () => {
-    const user = userEvent.setup();
-
-    vi.mocked(fetch).mockImplementation((url, options = {}) => {
-      if (url === 'http://localhost:8000/lists' && !options.method) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () =>
-            Promise.resolve([
-              { _id: 'list-123', name: 'Cool Stuff' },
-              { _id: 'list-456', name: 'Other Stuff' },
-            ]),
-        });
-      }
-
-      if (url === 'http://localhost:8000/tasks' && !options.method) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () =>
-            Promise.resolve([
-              {
-                _id: 'task-123',
-                name: 'Do a backflip',
-                listId: 'list-123',
-              },
-            ]),
-        });
-      }
-
-      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
-    });
-
-    render(<MyApp />);
-    // Validate that tasks exist.
-    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
-
-    // Find the checkboxes assosciated with each task.
-    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
-
-    await user.click(taskOneCheckbox);
-    await user.click(
-      screen.getByRole('button', { name: 'Move Task To A Different List' })
-    );
-
-    const dialog = screen.getByRole('dialog', {
-      name: 'Choose a list to move task(s) to',
-    });
-
-    await user.click(dialog.parentElement);
-
-    expect(
-      screen.queryByRole('dialog', { name: 'Choose a list to move task(s) to' })
-    ).not.toBeInTheDocument();
-    expect(taskOneCheckbox).toBeChecked();
-    expect(screen.getByText('1 selected')).toBeInTheDocument();
 
     // Verify the backend request
     expect(fetch).not.toHaveBeenCalledWith(

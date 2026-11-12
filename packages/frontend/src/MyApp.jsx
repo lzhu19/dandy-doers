@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Table from './Table';
 import Form from './Form';
 import './ToDoList.css';
@@ -538,6 +538,30 @@ function MyApp() {
     }
   }
 
+const createListDialogRef = useRef(null);
+useEffect(() => {
+  const dialog = createListDialogRef.current;
+  if (!dialog) return;
+
+  if (isCreateListOpen && !dialog.open) {
+    dialog.showModal();
+  } else if (!isCreateListOpen && dialog.open) {
+    dialog.close();
+  }
+}, [isCreateListOpen]);
+
+const deleteListDialogRef = useRef(null);
+useEffect(() => {
+  const dialog = deleteListDialogRef.current;
+  if (!dialog) return;
+
+  if (isDeleteListOpen && currentList) {
+    if (!dialog.open) dialog.showModal();
+  } else if (dialog.open) {
+    dialog.close();
+  }
+}, [isDeleteListOpen, currentList]);
+
   return (
     <>
       <div className="main-layout">
@@ -673,14 +697,19 @@ function MyApp() {
         </aside>
       </div>
       
-      {isCreateListOpen && (
-        <div className="list-dialog-backdrop">
-          <section
-            className="list-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-list-title"
-          >
+      <dialog
+        ref={createListDialogRef}
+        className="list-dialog"
+        aria-labelledby="create-list-title"
+        onCancel={(event) => {
+          event.preventDefault();
+          if (isCreatingList) return;
+
+          setIsCreateListOpen(false);
+          setNewListName('');
+          setListCreateError('');
+        }}
+      >
             <h2 id="create-list-title">Create a list</h2>
             <form onSubmit={createList}>
               <label htmlFor="new-list-name">List name</label>
@@ -714,20 +743,23 @@ function MyApp() {
                 </button>
               </div>
             </form>
-          </section>
-        </div>
-      )}
-      {isDeleteListOpen && currentList && (
-        <div className="list-dialog-backdrop">
-          <section
-            className="list-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-list-title"
-          >
+          </dialog>
+      <dialog
+          ref={deleteListDialogRef}
+          className="list-dialog"
+          aria-labelledby="delete-list-title"
+          aria-describedby="delete-list-description"
+          onCancel={(event) => {
+            event.preventDefault();
+            if (isDeletingList) return;
+
+            setIsDeleteListOpen(false);
+            setListDeleteError('');
+          }}
+        >
             <h2 id="delete-list-title">Permanently delete list?</h2>
-            <p>
-              “{currentList.name}” and all its tasks will be permanently
+            <p id="delete-list-description">
+              “{currentList?.name}” and all its tasks will be permanently
               deleted, including archived and deleted tasks. This action cannot
               be undone.
             </p>
@@ -738,6 +770,7 @@ function MyApp() {
             )}
             <div className="list-dialog-actions">
               <button
+                autoFocus
                 type="button"
                 onClick={() => {
                   setIsDeleteListOpen(false);
@@ -756,9 +789,7 @@ function MyApp() {
                 {isDeletingList ? 'Deleting...' : 'Permanently Delete'}
               </button>
             </div>
-          </section>
-        </div>
-      )}
+          </dialog>
       {taskDetails && (
         <TaskDetails
           task={taskDetails}
