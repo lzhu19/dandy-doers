@@ -1,7 +1,7 @@
 .main-layout {
   display: grid;
   grid-template-columns: 388px minmax(0, 1fr);
-  grid-template-areas: "sidebar main";
+  grid-template-areas: 'sidebar main';
   min-height: 100vh;
   background: #fffbf2;
 }
@@ -174,7 +174,6 @@ tr.drop-target td {
   outline: 2px solid white;
   outline-offset: 2px;
   text-decoration: underline;
-
 }
 
 .add-list-button:hover {
@@ -288,7 +287,6 @@ tr.drop-target td {
 .task-panel input[type='text']:focus-visible {
   text-decoration: underline;
 }
-
 
 .task-panel input[type='checkbox'] {
   appearance: none;
@@ -720,7 +718,7 @@ tr.drop-target td {
   letter-spacing: 0.25px;
 }
 
-.task-details-cancel:focus{
+.task-details-cancel:focus {
   color: #9e8eab;
 }
 
@@ -742,9 +740,9 @@ tr.drop-target td {
   color: #3a3042;
 }
 
-.task-details-cancel:hover{
+.task-details-cancel:hover {
   color: #3a3042;
- }
+}
 
 .task-details-divider {
   width: 100%;

@@ -43,7 +43,6 @@ function BulkActions(props) {
     }
   }, [props.isMoveTaskOpen]);
 
-
   //nothing selected, so nothing to show
   if (props.selectedTaskId.length === 0) {
     return null;
@@ -92,7 +91,12 @@ function BulkActions(props) {
         <DeleteIcon />
       </button>
 
-    <dialog ref={moveDialogRef} className="move-task-popup" aria-labelledby="move-task-title" onClose={() => props.setIsMoveTaskOpen(false)}>
+      <dialog
+        ref={moveDialogRef}
+        className="move-task-popup"
+        aria-labelledby="move-task-title"
+        onClose={() => props.setIsMoveTaskOpen(false)}
+      >
         <div className="task-details-header">
           <h2 className="task-details-title" id="move-task-title">
             Choose a list to move task(s) to
@@ -102,7 +106,10 @@ function BulkActions(props) {
             autoFocus
             className="task-details-cancel"
             type="button"
-            onClick={() => props.setIsMoveTaskOpen(false)}>Cancel</button>
+            onClick={() => props.setIsMoveTaskOpen(false)}
+          >
+            Cancel
+          </button>
         </div>
 
         <hr className="task-details-divider" />

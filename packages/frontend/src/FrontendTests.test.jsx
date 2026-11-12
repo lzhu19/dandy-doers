@@ -1377,7 +1377,9 @@ describe('list dialog workflows', () => {
     );
     await openApp();
 
-    await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'School' }));
+    await user.click(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    );
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
     await user.clear(renameInput);
     fireEvent.blur(renameInput);
@@ -1400,7 +1402,9 @@ describe('list dialog workflows', () => {
     );
     await openApp();
 
-    await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'School' }));
+    await user.click(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    );
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
     await user.clear(renameInput);
     await user.type(renameInput, renamedList.name);
@@ -1414,20 +1418,25 @@ describe('list dialog workflows', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
   });
-   it('closes the create dialog through cancel and clears its input', async () => {
+  it('closes the create dialog through cancel and clears its input', async () => {
     const user = userEvent.setup();
     installApi();
     await openApp();
 
     await user.click(screen.getByRole('button', { name: '+ Add List' }));
     const dialog = screen.getByRole('dialog', { name: 'Create a list' });
-    await user.type(within(dialog).getByRole('textbox', { name: 'List name' }), 'Temporary list');
+    await user.type(
+      within(dialog).getByRole('textbox', { name: 'List name' }),
+      'Temporary list'
+    );
 
     const cancelEvent = new Event('cancel', { cancelable: true });
     fireEvent(dialog, cancelEvent);
 
     expect(cancelEvent.defaultPrevented).toBe(true);
-    expect(screen.queryByRole('dialog', { name: 'Create a list' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', { name: 'Create a list' })
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '+ Add List' }));
     expect(screen.getByRole('textbox', { name: 'List name' })).toHaveValue('');
@@ -1439,16 +1448,22 @@ describe('list dialog workflows', () => {
     await openApp();
 
     await user.click(screen.getByRole('button', { name: 'Delete List' }));
-    const dialog = screen.getByRole('dialog', { name: 'Permanently delete list?' });
+    const dialog = screen.getByRole('dialog', {
+      name: 'Permanently delete list?',
+    });
 
     const cancelEvent = new Event('cancel', { cancelable: true });
     fireEvent(dialog, cancelEvent);
 
     expect(cancelEvent.defaultPrevented).toBe(true);
-    expect(screen.queryByRole('dialog', { name: 'Permanently delete list?' })).not.toBeInTheDocument();
-    expect(within(screen.getByRole('main')).getByRole('button', { name: 'School' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', { name: 'Permanently delete list?' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    ).toBeInTheDocument();
   });
-    it('keeps the create dialog open when cancelled while creating', async () => {
+  it('keeps the create dialog open when cancelled while creating', async () => {
     const user = userEvent.setup();
     const secondList = { _id: 'list-2', name: 'Work' };
     const { routes } = installApi({ lists: [list, secondList] });
@@ -1464,17 +1479,24 @@ describe('list dialog workflows', () => {
 
     await user.click(screen.getByRole('button', { name: '+ Add List' }));
     const dialog = screen.getByRole('dialog', { name: 'Create a list' });
-    await user.type(within(dialog).getByRole('textbox', { name: 'List name' }), 'New list');
+    await user.type(
+      within(dialog).getByRole('textbox', { name: 'List name' }),
+      'New list'
+    );
     await user.click(within(dialog).getByRole('button', { name: 'Create' }));
 
-    expect(within(dialog).getByRole('button', { name: 'Creating...' })).toBeDisabled();
+    expect(
+      within(dialog).getByRole('button', { name: 'Creating...' })
+    ).toBeDisabled();
 
     const cancelEvent = new Event('cancel', { cancelable: true });
     fireEvent(dialog, cancelEvent);
 
     expect(cancelEvent.defaultPrevented).toBe(true);
     expect(dialog).toHaveAttribute('open');
-    expect(within(dialog).getByRole('textbox', { name: 'List name' })).toHaveValue('New list');
+    expect(
+      within(dialog).getByRole('textbox', { name: 'List name' })
+    ).toHaveValue('New list');
 
     finishRequest();
     expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
@@ -1494,10 +1516,16 @@ describe('list dialog workflows', () => {
     await openApp();
 
     await user.click(screen.getByRole('button', { name: 'Delete List' }));
-    const dialog = screen.getByRole('dialog', { name: 'Permanently delete list?' });
-    await user.click(within(dialog).getByRole('button', { name: 'Permanently Delete' }));
+    const dialog = screen.getByRole('dialog', {
+      name: 'Permanently delete list?',
+    });
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Permanently Delete' })
+    );
 
-    expect(within(dialog).getByRole('button', { name: 'Deleting...' })).toBeDisabled();
+    expect(
+      within(dialog).getByRole('button', { name: 'Deleting...' })
+    ).toBeDisabled();
 
     const cancelEvent = new Event('cancel', { cancelable: true });
     fireEvent(dialog, cancelEvent);
@@ -1508,7 +1536,8 @@ describe('list dialog workflows', () => {
     finishRequest();
     expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
   });
-    it('keeps the delete dialog open when the list name updates', async () => {   // the test below is to test skipping opening dialog, where dialog is true and !dialog is false
+  it('keeps the delete dialog open when the list name updates', async () => {
+    // the test below is to test skipping opening dialog, where dialog is true and !dialog is false
     const user = userEvent.setup();
     const secondList = { _id: 'list-2', name: 'Work' };
     const renamedList = { ...list, name: 'Classes' };
@@ -1518,7 +1547,9 @@ describe('list dialog workflows', () => {
     );
     await openApp();
 
-    await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'School' }));
+    await user.click(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    );
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
     await user.clear(renameInput);
     await user.type(renameInput, 'Classes');
@@ -1526,7 +1557,9 @@ describe('list dialog workflows', () => {
     fireEvent.blur(renameInput);
     fireEvent.click(screen.getByRole('button', { name: 'Delete List' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Permanently delete list?' });
+    const dialog = screen.getByRole('dialog', {
+      name: 'Permanently delete list?',
+    });
 
     expect(await within(dialog).findByText(/Classes/)).toBeInTheDocument();
     expect(dialog).toHaveAttribute('open');
@@ -1747,27 +1780,27 @@ describe('TaskDetails component', () => {
     });
   });
   it('closes task details with cancel', () => {
-  const closeTaskDetails = vi.fn();
-  const saveTaskDetails = vi.fn();
+    const closeTaskDetails = vi.fn();
+    const saveTaskDetails = vi.fn();
 
-  render(
-    <TaskDetails
-      task={{ _id: 'task-1', name: 'Study', notes: '' }}
-      closeTaskDetails={closeTaskDetails}
-      saveTaskDetails={saveTaskDetails}
-    />
-  );
+    render(
+      <TaskDetails
+        task={{ _id: 'task-1', name: 'Study', notes: '' }}
+        closeTaskDetails={closeTaskDetails}
+        saveTaskDetails={saveTaskDetails}
+      />
+    );
 
-  const dialog = screen.getByRole('dialog', { name: 'Task details' });
-  const cancelEvent = new Event('cancel', { cancelable: true });
+    const dialog = screen.getByRole('dialog', { name: 'Task details' });
+    const cancelEvent = new Event('cancel', { cancelable: true });
 
-  fireEvent(dialog, cancelEvent);
+    fireEvent(dialog, cancelEvent);
 
-  expect(cancelEvent.defaultPrevented).toBe(true);
-  expect(dialog).not.toHaveAttribute('open');
-  expect(closeTaskDetails).toHaveBeenCalledTimes(1);
-  expect(saveTaskDetails).not.toHaveBeenCalled();
-});
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(dialog).not.toHaveAttribute('open');
+    expect(closeTaskDetails).toHaveBeenCalledTimes(1);
+    expect(saveTaskDetails).not.toHaveBeenCalled();
+  });
 });
 
 describe('DeleteList', () => {
@@ -4906,19 +4939,25 @@ describe('bulk moving', () => {
 
     await user.click(moveButton);
 
-    const dialog = screen.getByRole('dialog', {name: 'Choose a list to move task(s) to',});
+    const dialog = screen.getByRole('dialog', {
+      name: 'Choose a list to move task(s) to',
+    });
 
     dialog.removeAttribute('open');
     fireEvent(dialog, new Event('close'));
 
-    expect(screen.queryByRole('dialog', {name: 'Choose a list to move task(s) to',})).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', { name: 'Choose a list to move task(s) to' })
+    ).not.toBeInTheDocument();
 
     await user.click(moveButton);
 
     expect(dialog).toHaveAttribute('open');
 
-    await user.click(within(dialog).getByRole('button', { name: 'Other Stuff' }));
-    
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Other Stuff' })
+    );
+
     await waitFor(() => {
       expect(
         within(table).queryByRole('cell', { name: 'Do a backflip' })

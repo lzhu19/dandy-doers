@@ -44,10 +44,20 @@ function SearchBar(props) {
           >
             <div className="task-name">{task.name}</div>
             <div className="search-list-buttons">
-              <button className="archive-icon-button" aria-label="Archive" onClick={() => props.archiveTask(task._id)}>
-                <ArchiveIcon/>
+              <button
+                className="archive-icon-button"
+                aria-label="Archive"
+                onClick={() => props.archiveTask(task._id)}
+              >
+                <ArchiveIcon />
               </button>
-              <button className="delete-icon-button" aria-label="Delete" onClick={() => props.removeTask(task._id)}><DeleteIcon/></button>{' '}
+              <button
+                className="delete-icon-button"
+                aria-label="Delete"
+                onClick={() => props.removeTask(task._id)}
+              >
+                <DeleteIcon />
+              </button>{' '}
             </div>
           </li>
         ))}
