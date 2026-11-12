@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 function TableHeader(props) {
   const selectAll = props.taskData.every((row) =>
@@ -30,6 +30,20 @@ function TableHeader(props) {
 }
 
 function BulkActions(props) {
+  const moveDialogRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = moveDialogRef.current;
+    if (!dialog) return;
+
+    if (props.isMoveTaskOpen && !dialog.open) {
+      dialog.showModal();
+    } else if (!props.isMoveTaskOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [props.isMoveTaskOpen]);
+
+
   //nothing selected, so nothing to show
   if (props.selectedTaskId.length === 0) {
     return null;
@@ -78,56 +92,46 @@ function BulkActions(props) {
         <DeleteIcon />
       </button>
 
-      {props.isMoveTaskOpen && (
-        <div
-          className="task-details-bg"
-          onClick={() => props.setIsMoveTaskOpen(false)}
-        >
-          <section
-            className="move-task-popup"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="move-task-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="task-details-header">
-              <h2 className="task-details-title" id="move-task-title">
-                Choose a list to move task(s) to
-              </h2>
-              <button
-                className="task-details-cancel"
-                type="button"
-                onClick={() => props.setIsMoveTaskOpen(false)}
-              >
-                Cancel
-              </button>
-            </div>
-            <hr className="task-details-divider" />
+    <dialog ref={moveDialogRef} className="move-task-popup" aria-labelledby="move-task-title" onClose={() => props.setIsMoveTaskOpen(false)}>
+        <div className="task-details-header">
+          <h2 className="task-details-title" id="move-task-title">
+            Choose a list to move task(s) to
+          </h2>
 
-            <div className="move-task-body">
-              {otherLists.length === 0 && (
-                <p className="move-task-empty">No other lists available.</p>
-              )}
-              {otherLists.map((list) => (
-                <button
-                  className="user-list-select"
-                  type="button"
-                  key={list._id}
-                  onClick={() => {
-                    props.selectedTaskId.forEach((id) => {
-                      props.moveTaskToList(id, list._id);
-                    });
-                    props.setSelectedTaskId([]);
-                    props.setIsMoveTaskOpen(false);
-                  }}
-                >
-                  {list.name}
-                </button>
-              ))}
-            </div>
-          </section>
+          <button
+            autoFocus
+            className="task-details-cancel"
+            type="button"
+            onClick={() => props.setIsMoveTaskOpen(false)}>Cancel</button>
         </div>
-      )}
+
+        <hr className="task-details-divider" />
+
+        <div className="move-task-body">
+          {otherLists.length === 0 && (
+            <p className="move-task-empty">No other lists available.</p>
+          )}
+
+          {otherLists.map((list) => (
+            <button
+              className="user-list-select"
+              type="button"
+              key={list._id}
+              onClick={() => {
+                props.selectedTaskId.forEach((id) => {
+                  props.moveTaskToList(id, list._id);
+                });
+
+                moveDialogRef.current.close();
+                props.setIsMoveTaskOpen(false);
+                props.setSelectedTaskId([]);
+              }}
+            >
+              {list.name}
+            </button>
+          ))}
+        </div>
+      </dialog>
     </div>
   );
 }

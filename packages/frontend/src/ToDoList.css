@@ -453,6 +453,19 @@ tr.drop-target td {
   padding: 24px 50px 32px;
 }
 
+.move-task-body .user-list-select:focus-visible {
+  outline: 3px solid #3a3042;
+  outline-offset: 3px;
+  text-decoration: underline;
+}
+
+.move-task-popup .task-details-cancel:focus-visible {
+  color: #3a3042;
+  text-decoration: underline;
+  outline: 3px solid #3a3042;
+  outline-offset: 3px;
+}
+
 .move-task-empty {
   margin: 0;
   color: #9e8eab;
