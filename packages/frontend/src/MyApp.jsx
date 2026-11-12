@@ -135,7 +135,7 @@ const displayPopup = (message, undoAction, taskId) => {
     setPopupMessage("");
     setPopupUndo(null);
     setPopupTaskId(null);
-  }, 5000);
+  }, 10000);
 };
 
 
