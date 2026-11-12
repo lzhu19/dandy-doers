@@ -1,8 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
-// Array to store user credentials, resets when server restarts
-const creds = [];
+import User from './user.js';
 
 function generateAccessToken(username) {
   return new Promise((resolve, reject) => {
@@ -22,28 +20,34 @@ function generateAccessToken(username) {
 }
 
 export function registerUser(req, res) {
-  const { username, pwd } = req.body;
+  const { username, pwd } = req.body ?? {};
 
-  if (!username || !pwd) {
-    res.status(400).send('Bad request: Invalid input data.');
-  } else if (creds.find((c) => c.username === username)) {
-    res.status(409).send('Username already taken');
-  } else {
-    bcrypt
-      .genSalt(10)
-      .then((salt) => bcrypt.hash(pwd, salt))
-      .then((hashedPassword) => {
-        generateAccessToken(username).then((token) => {
-          console.log('Token:', token);
-          res.status(201).send({ token: token });
-          creds.push({ username, hashedPassword });
-        });
-      })
-      .catch((error) => {
-        console.error('Could not register user: ', error);
-        res.status(500).send('Could not register user');
-      });
+  if (
+    typeof username !== 'string' ||
+    typeof pwd !== 'string' ||
+    !username ||
+    !pwd
+  ) {
+    return res.status(400).send('Bad request: Invalid input data.');
   }
+
+  User.findOne({ username })
+    .then((existingUser) => {
+      if (existingUser) {
+        return res.status(409).send('Username already taken');
+        return null;
+      }
+      return bcrypt
+        .genSalt(10)
+        .then((salt) => bcrypt.hash(pwd, salt))
+        .then((hashedPassword) => new User({ username, hashedPassword }).save())
+        .then(() => generateAccessToken(username))
+        .then((token) => res.status(201).send({ token: token }));
+    })
+    .catch((error) => {
+      console.error('Could not register user: ', error);
+      res.status(500).send('Could not register user');
+    });
 }
 
 export function authenticateUser(req, res, next) {
@@ -67,24 +71,29 @@ export function authenticateUser(req, res, next) {
 
 export function loginUser(req, res) {
   const { username, pwd } = req.body ?? {};
-  const retrievedUser = creds.find((c) => c.username === username);
 
-  if (!retrievedUser) {
-    res.status(401).send('Unauthorized');
-  } else {
-    bcrypt
-      .compare(pwd, retrievedUser.hashedPassword)
-      .then((matched) => {
-        if (matched) {
-          generateAccessToken(username).then((token) => {
-            res.status(200).send({ token: token });
-          });
-        } else {
-          res.status(401).send('Unauthorized');
-        }
-      })
-      .catch(() => {
-        res.status(401).send('Unauthorized');
-      });
+  if (typeof username !== 'string' || typeof pwd !== 'string') {
+    return res.status(401).send('Unauthorized');
   }
+
+  User.findOne({ username })
+    .then((user) => {
+      if (!user) {
+        res.status(401).send('Unauthorized');
+        return null;
+      }
+      return bcrypt.compare(pwd, user.hashedPassword).then((matched) => {
+        if (!matched) {
+          res.status(401).send('Unauthorized');
+          return null;
+        }
+        return generateAccessToken(username).then((token) =>
+          res.status(200).send({ token: token })
+        );
+      });
+    })
+    .catch(() => {
+      console.error('Could not log in user: ', error);
+      res.status(500).send('Could not log in user');
+    });
 }
