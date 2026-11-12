@@ -36,7 +36,15 @@ function MyApp() {
   const [deletedTasks, setDeletedTasks] = useState([]);
   const [isMoveTaskOpen, setIsMoveTaskOpen] = useState(false);
 
-  const [token, setToken] = useState(INVALID_TOKEN);
+  const [token, setToken] = useState(
+    localStorage.getItem('token') ?? INVALID_TOKEN
+  );
+
+  function saveToken(newToken) {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+  }
+
   const [message, setMessage] = useState('');
 
   function addAuthHeader(otherHeaders = {}) {
@@ -61,7 +69,7 @@ function MyApp() {
       .then((response) => {
         if (response.status === 200) {
           setMessage('');
-          return response.json().then((payload) => setToken(payload.token));
+          return response.json().then((payload) => saveToken(payload.token));
         }
         setMessage('Login failed. Incorrect username or password.');
       })
@@ -81,7 +89,7 @@ function MyApp() {
       .then((response) => {
         if (response.status === 201) {
           setMessage('');
-          return response.json().then((payload) => setToken(payload.token));
+          return response.json().then((payload) => saveToken(payload.token));
         }
         if (response.status === 409) {
           setMessage(
