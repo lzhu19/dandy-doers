@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 function Login(props) {
   const [creds, setCreds] = useState({ username: '', pwd: '' });

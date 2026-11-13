@@ -35,7 +35,6 @@ export function registerUser(req, res) {
     .then((existingUser) => {
       if (existingUser) {
         return res.status(409).send('Username already taken');
-        return null;
       }
       return bcrypt
         .genSalt(10)
@@ -92,7 +91,7 @@ export function loginUser(req, res) {
         );
       });
     })
-    .catch(() => {
+    .catch((error) => {
       console.error('Could not log in user: ', error);
       res.status(500).send('Could not log in user');
     });
