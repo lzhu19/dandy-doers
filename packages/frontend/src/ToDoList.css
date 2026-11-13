@@ -661,6 +661,175 @@ tr.drop-target td {
   padding: 24px 50px;
 }
 
+.task-created-at {
+  align-self: flex-end;
+  margin: -20px 0 28px;
+  color: #888;
+  font-size: 0.8em;
+}
+
+.task-deadline-countdown {
+  display: block;
+  color: #888;
+  font-size: 0.8em;
+}
+
+.task-deadline-countdown-list {
+  margin-top: 4px;
+  text-align: left;
+}
+
+.task-deadline-countdown-popup {
+  margin: -24px 0 28px;
+}
+
+.task-deadline-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+
+.task-deadline-toggle input {
+  appearance: none;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 2px solid #9e8eab;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.task-deadline-toggle input:checked {
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3 8 3 3 7-7' fill='none' stroke='%233a3042' stroke-width='2'/%3E%3C/svg%3E");
+}
+
+.task-deadline-toggle input:focus-visible {
+  outline: 2px solid #9e8eab;
+  outline-offset: 2px;
+}
+
+.task-deadline-toggle label {
+  margin: 0;
+  color: #3a3042;
+  cursor: pointer;
+}
+
+.task-deadline-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 28px;
+}
+
+.task-deadline-fields > label {
+  margin: 0;
+  color: #3a3042;
+}
+
+.task-deadline-time-label {
+  grid-column: 2 / 4;
+}
+
+.task-deadline-time {
+  display: grid;
+  grid-column: 2 / 4;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: #3a3042;
+}
+
+.task-deadline-time.is-24-hour {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.task-time-format-toggle {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-self: end;
+  gap: 6px;
+  font-size: 0.8em;
+}
+
+.task-time-format-toggle input {
+  appearance: none;
+  position: relative;
+  width: 29px;
+  height: 16px;
+  margin: 0;
+  border: 1px solid #9e8eab;
+  border-radius: 8px;
+  background: #d8d2dc;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.task-time-format-toggle input::before {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  content: '';
+  transition: transform 0.15s ease;
+}
+
+.task-time-format-toggle input:checked {
+  background: #6b5b78;
+}
+
+.task-time-format-toggle input:checked::before {
+  transform: translateX(13px);
+}
+
+.task-time-format-toggle input:focus-visible {
+  outline: 2px solid #9e8eab;
+  outline-offset: 2px;
+}
+
+.task-time-format-toggle label {
+  margin: 0;
+  color: #3a3042;
+  cursor: pointer;
+}
+
+.task-deadline-separator {
+  font-weight: 700;
+}
+
+.task-deadline-fields > input,
+.task-deadline-time select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 2px solid #ece0c9;
+  border-radius: 10px;
+  background: #fff;
+  color: #3a3042;
+  font: inherit;
+}
+
+.task-deadline-time select {
+  min-width: 60px;
+  min-height: 36px;
+  padding: 4px 6px;
+}
+
+.task-details-error {
+  margin: 0 0 20px;
+  color: #b42318;
+}
+
 .task-details-label {
   display: block;
   margin: 0 0 10px 0;
