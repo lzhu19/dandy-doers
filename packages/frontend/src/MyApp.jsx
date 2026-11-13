@@ -732,17 +732,19 @@ function MyApp() {
                     {listRenameError}
                   </p>
                 )}
-                <button
-                  className="delete-list-icon-button"
-                  type="button"
-                  aria-label="Delete List"
-                  onClick={() => {
-                    setListDeleteError('');
-                    setIsDeleteListOpen(true);
-                  }}
-                >
-                  <TrashIcon />
-                </button>
+                {editingListId !== currentList._id && (
+                  <button
+                    className="delete-list-icon-button"
+                    type="button"
+                    aria-label="Delete List"
+                    onClick={() => {
+                      setListDeleteError('');
+                      setIsDeleteListOpen(true);
+                    }}
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
               </div>
               <hr className="header-underline" />
 
