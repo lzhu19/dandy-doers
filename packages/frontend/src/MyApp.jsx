@@ -7,15 +7,46 @@ import DeleteList from './DeleteList';
 import ListSection from './ListSection';
 import SearchBar from './SearchBar';
 import TaskDetails from './TaskDetails';
+import DeadlineCountdown from './DeadlineCountdown';
 import Login from './Login';
 
 const INVALID_TOKEN = 'Invalid token';
+const UPCOMING_SETTINGS_KEY = 'upcomingTaskSettings';
+
+function getUpcomingSettings() {
+  try {
+    const storedSettings = JSON.parse(
+      localStorage.getItem(UPCOMING_SETTINGS_KEY) ?? 'null'
+    );
+    if (
+      storedSettings?.mode === 'all' ||
+      (storedSettings?.mode === 'period' &&
+        Number.isInteger(storedSettings.days) &&
+        storedSettings.days >= 1 &&
+        storedSettings.days <= 30)
+    ) {
+      return storedSettings;
+    }
+  } catch {
+    // Use defaults when saved settings are unavailable or invalid.
+  }
+  return { mode: 'all', days: 1 };
+}
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
   const [lists, setLists] = useState([]);
   const [selectedListId, setSelectedListId] = useState(null);
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
+  const [isUpcomingSettingsOpen, setIsUpcomingSettingsOpen] = useState(false);
+  const [upcomingSettings, setUpcomingSettings] = useState(getUpcomingSettings);
+  const [upcomingClock, setUpcomingClock] = useState(null);
+  const [upcomingDraftMode, setUpcomingDraftMode] = useState(
+    upcomingSettings.mode
+  );
+  const [upcomingDraftDays, setUpcomingDraftDays] = useState(
+    String(upcomingSettings.days)
+  );
   const [newListName, setNewListName] = useState('');
   const [listCreateError, setListCreateError] = useState('');
   const [isCreatingList, setIsCreatingList] = useState(false);
@@ -45,6 +76,23 @@ function MyApp() {
   const [token, setToken] = useState(
     localStorage.getItem('token') ?? INVALID_TOKEN
   );
+
+  useEffect(() => {
+    const hasSelectedPeriod =
+      upcomingSettings.mode === 'period' &&
+      Number.isInteger(upcomingSettings.days) &&
+      upcomingSettings.days >= 1 &&
+      upcomingSettings.days <= 30;
+    if (!hasSelectedPeriod) return undefined;
+
+    const updateUpcomingClock = () => setUpcomingClock(Date.now());
+    const initialUpdateId = setTimeout(updateUpcomingClock, 0);
+    const intervalId = setInterval(updateUpcomingClock, 5 * 60 * 1000);
+    return () => {
+      clearTimeout(initialUpdateId);
+      clearInterval(intervalId);
+    };
+  }, [upcomingSettings.mode, upcomingSettings.days]);
 
   function saveToken(newToken) {
     localStorage.setItem('token', newToken);
@@ -645,9 +693,52 @@ function MyApp() {
   const currentTasks = tasks.filter(
     (task) => String(task.listId) === String(currentList?._id)
   );
+  const upcomingTasks = tasks
+    .filter((task) => {
+      if (!task.deadline || Number.isNaN(new Date(task.deadline).getTime())) {
+        return false;
+      }
+      if (upcomingSettings.mode === 'all') return true;
+      if (upcomingClock === null) return false;
+
+      const deadlineTime = new Date(task.deadline).getTime();
+      const periodEnd =
+        upcomingClock + upcomingSettings.days * 24 * 60 * 60 * 1000;
+      return deadlineTime >= upcomingClock && deadlineTime <= periodEnd;
+    })
+    .sort(
+      (first, second) => new Date(first.deadline) - new Date(second.deadline)
+    );
 
   //finds the task of which edit icon was clicked
   const taskDetails = tasks.find((task) => task._id === taskDetailsId);
+
+  function openUpcomingSettings() {
+    setUpcomingDraftMode(upcomingSettings.mode);
+    setUpcomingDraftDays(String(upcomingSettings.days));
+    setIsUpcomingSettingsOpen(true);
+  }
+
+  function applyUpcomingSettings() {
+    const settings = {
+      mode: upcomingDraftMode,
+      days:
+        upcomingDraftMode === 'period'
+          ? Number(upcomingDraftDays)
+          : upcomingSettings.days,
+    };
+    localStorage.setItem(UPCOMING_SETTINGS_KEY, JSON.stringify(settings));
+    if (settings.mode === 'period') {
+      setUpcomingClock(Date.now());
+    }
+    setUpcomingSettings(settings);
+    setIsUpcomingSettingsOpen(false);
+  }
+
+  const isUpcomingPeriodValid =
+    Number.isInteger(Number(upcomingDraftDays)) &&
+    Number(upcomingDraftDays) >= 1 &&
+    Number(upcomingDraftDays) <= 30;
 
   async function reorderTasks(draggedTaskId, targetTaskId) {
     if (!currentList) return;
@@ -723,8 +814,36 @@ function MyApp() {
           <div>
             <h2 className="sidebar-section-title">Upcoming</h2>
             <div className="upcoming-box">
-              <p className="upcoming-empty-text">No upcoming tasks</p>
+              {upcomingTasks.length === 0 ? (
+                <p className="upcoming-empty-text">No upcoming tasks</p>
+              ) : (
+                <table className="upcoming-task-table">
+                  <tbody>
+                    {upcomingTasks.map((task) => (
+                      <tr key={task._id}>
+                        <td>
+                          <div className="upcoming-task-name">{task.name}</div>
+                          <DeadlineCountdown
+                            deadline={task.deadline}
+                            className="task-deadline-countdown task-deadline-countdown-list"
+                            onExpire={() =>
+                              clearExpiredDeadline(task._id, task.deadline)
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
+            <button
+              className="upcoming-settings-trigger"
+              type="button"
+              onClick={openUpcomingSettings}
+            >
+              Select which tasks to show...
+            </button>
           </div>
 
           <div>
@@ -866,6 +985,84 @@ function MyApp() {
               UNDO
             </button>
           )}
+        </div>
+      )}
+      {isUpcomingSettingsOpen && (
+        <div
+          className="task-details-bg"
+          onClick={() => setIsUpcomingSettingsOpen(false)}
+        >
+          <section
+            className={`task-details-popup upcoming-settings-popup ${
+              upcomingDraftMode === 'period'
+                ? 'upcoming-settings-popup-period'
+                : ''
+            }`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Upcoming task settings"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="upcoming-settings-options">
+              <label className="upcoming-settings-option">
+                <input
+                  type="radio"
+                  name="upcoming-task-range"
+                  value="all"
+                  checked={upcomingDraftMode === 'all'}
+                  onChange={() => setUpcomingDraftMode('all')}
+                />
+                <span>Show all tasks with deadlines</span>
+              </label>
+              <label className="upcoming-settings-option">
+                <input
+                  type="radio"
+                  name="upcoming-task-range"
+                  value="period"
+                  checked={upcomingDraftMode === 'period'}
+                  onChange={() => setUpcomingDraftMode('period')}
+                />
+                <span>Show all tasks due within a set period of time...</span>
+              </label>
+              {upcomingDraftMode === 'period' && (
+                <label
+                  className="upcoming-settings-days-label"
+                  htmlFor="upcoming-period-days"
+                >
+                  Number of days (1-30)
+                  <input
+                    id="upcoming-period-days"
+                    type="number"
+                    min="1"
+                    max="30"
+                    step="1"
+                    value={upcomingDraftDays}
+                    onChange={(event) =>
+                      setUpcomingDraftDays(event.target.value)
+                    }
+                  />
+                </label>
+              )}
+              <button
+                className="upcoming-settings-apply"
+                type="button"
+                disabled={
+                  upcomingDraftMode === 'period' && !isUpcomingPeriodValid
+                }
+                onClick={applyUpcomingSettings}
+              >
+                Apply
+              </button>
+            </div>
+            <button
+              className="upcoming-settings-close"
+              type="button"
+              aria-label="Close Upcoming settings"
+              onClick={() => setIsUpcomingSettingsOpen(false)}
+            >
+              ×
+            </button>
+          </section>
         </div>
       )}
       {isCreateListOpen && (

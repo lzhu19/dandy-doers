@@ -176,6 +176,241 @@ describe('rendering', () => {
       await screen.findByText('You currently have no task lists')
     ).toBeInTheDocument();
   });
+
+  it('shows deadline tasks in Upcoming without making them interactive', async () => {
+    const user = userEvent.setup();
+    const originalFetch = fetch;
+    const firstUpcoming = {
+      ...activeTask,
+      deadline: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    };
+    const secondUpcoming = {
+      ...activeTask,
+      _id: 'task-4',
+      name: 'Essay',
+      listId: 'list-2',
+      deadline: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    };
+    const noDeadlineTask = {
+      ...activeTask,
+      _id: 'task-5',
+      name: 'No deadline',
+    };
+    const { fetchMock } = installApi({
+      tasks: [secondUpcoming, noDeadlineTask, firstUpcoming],
+      lists: [list, { _id: 'list-2', name: 'Work' }],
+    });
+
+    try {
+      await openApp();
+
+      const upcomingTable = document.querySelector('.upcoming-task-table');
+      const upcomingRows = within(upcomingTable).getAllByRole('row');
+      expect(upcomingRows).toHaveLength(2);
+      expect(within(upcomingRows[0]).getByText('Homework')).toBeInTheDocument();
+      expect(within(upcomingRows[0]).getByText(/Due in/)).toBeInTheDocument();
+      expect(within(upcomingRows[1]).getByText('Essay')).toBeInTheDocument();
+      expect(
+        within(upcomingTable).queryByText('No deadline')
+      ).not.toBeInTheDocument();
+      expect(
+        within(upcomingTable).queryByRole('button')
+      ).not.toBeInTheDocument();
+
+      const requestCount = fetchMock.mock.calls.length;
+      await user.click(within(upcomingRows[0]).getByText('Homework'));
+      expect(fetchMock).toHaveBeenCalledTimes(requestCount);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    } finally {
+      vi.stubGlobal('fetch', originalFetch);
+    }
+  });
+
+  it('opens and closes the Upcoming settings window', async () => {
+    const user = userEvent.setup();
+    const originalFetch = fetch;
+    installApi();
+
+    try {
+      await openApp();
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Select which tasks to show...',
+        })
+      );
+      expect(
+        screen.getByRole('dialog', { name: 'Upcoming task settings' })
+      ).toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole('button', { name: 'Close Upcoming settings' })
+      );
+      expect(
+        screen.queryByRole('dialog', { name: 'Upcoming task settings' })
+      ).not.toBeInTheDocument();
+    } finally {
+      vi.stubGlobal('fetch', originalFetch);
+    }
+  });
+
+  it('filters Upcoming by an applied day period and remembers the selection', async () => {
+    const user = userEvent.setup();
+    const originalFetch = fetch;
+    const originalSettings = localStorage.getItem('upcomingTaskSettings');
+    localStorage.removeItem('upcomingTaskSettings');
+    installApi({
+      tasks: [
+        {
+          ...activeTask,
+          deadline: new Date(
+            Date.now() + 2 * 24 * 60 * 60 * 1000
+          ).toISOString(),
+        },
+        {
+          ...activeTask,
+          _id: 'task-6',
+          name: 'Later task',
+          deadline: new Date(
+            Date.now() + 10 * 24 * 60 * 60 * 1000
+          ).toISOString(),
+        },
+      ],
+    });
+
+    try {
+      await openApp();
+
+      const upcomingTable = document.querySelector('.upcoming-task-table');
+      expect(
+        within(upcomingTable).getByRole('row', { name: /Homework/ })
+      ).toBeInTheDocument();
+      expect(
+        within(upcomingTable).getByRole('row', { name: /Later task/ })
+      ).toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Select which tasks to show...',
+        })
+      );
+      const dialog = screen.getByRole('dialog', {
+        name: 'Upcoming task settings',
+      });
+      expect(
+        within(dialog).getByRole('radio', {
+          name: 'Show all tasks with deadlines',
+        })
+      ).toBeChecked();
+      await user.click(
+        within(dialog).getByRole('radio', {
+          name: 'Show all tasks due within a set period of time...',
+        })
+      );
+
+      const daysInput = within(dialog).getByLabelText('Number of days (1-30)');
+      expect(daysInput).toHaveValue(1);
+      expect(daysInput).toHaveAttribute('min', '1');
+      expect(daysInput).toHaveAttribute('max', '30');
+      await user.clear(daysInput);
+      await user.type(daysInput, '3');
+      await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
+
+      expect(
+        within(upcomingTable).getByRole('row', { name: /Homework/ })
+      ).toBeInTheDocument();
+      expect(
+        within(upcomingTable).queryByRole('row', { name: /Later task/ })
+      ).not.toBeInTheDocument();
+      expect(JSON.parse(localStorage.getItem('upcomingTaskSettings'))).toEqual({
+        mode: 'period',
+        days: 3,
+      });
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Select which tasks to show...',
+        })
+      );
+      const reopenedDialog = screen.getByRole('dialog', {
+        name: 'Upcoming task settings',
+      });
+      expect(
+        within(reopenedDialog).getByRole('radio', {
+          name: 'Show all tasks due within a set period of time...',
+        })
+      ).toBeChecked();
+      expect(
+        within(reopenedDialog).getByLabelText('Number of days (1-30)')
+      ).toHaveValue(3);
+    } finally {
+      vi.stubGlobal('fetch', originalFetch);
+      if (originalSettings === null) {
+        localStorage.removeItem('upcomingTaskSettings');
+      } else {
+        localStorage.setItem('upcomingTaskSettings', originalSettings);
+      }
+    }
+  });
+
+  it('updates Upcoming when a task enters the selected period', async () => {
+    const now = new Date('2027-01-15T10:00:00.000Z');
+    const nowTime = now.getTime();
+    const dateNowSpy = vi.spyOn(Date, 'now').mockReturnValue(nowTime);
+    const originalFetch = fetch;
+    const originalSettings = localStorage.getItem('upcomingTaskSettings');
+    const originalSetInterval = globalThis.setInterval;
+    const refreshCallbacks = [];
+    const setIntervalSpy = vi
+      .spyOn(globalThis, 'setInterval')
+      .mockImplementation((callback, delay, ...args) => {
+        if (delay === 5 * 60 * 1000) {
+          refreshCallbacks.push(callback);
+          return 999;
+        }
+        return originalSetInterval(callback, delay, ...args);
+      });
+    localStorage.setItem(
+      'upcomingTaskSettings',
+      JSON.stringify({ mode: 'period', days: 1 })
+    );
+    installApi({
+      tasks: [
+        {
+          ...activeTask,
+          deadline: new Date(
+            now.getTime() + 24 * 60 * 60 * 1000 + 500
+          ).toISOString(),
+        },
+      ],
+    });
+
+    try {
+      await openApp();
+
+      const upcomingBox = document.querySelector('.upcoming-box');
+      expect(
+        within(upcomingBox).queryByText('Homework')
+      ).not.toBeInTheDocument();
+      expect(refreshCallbacks).toHaveLength(1);
+
+      dateNowSpy.mockReturnValue(nowTime + 5 * 60 * 1000);
+      act(() => {
+        refreshCallbacks[0]();
+      });
+
+      expect(within(upcomingBox).getByText('Homework')).toBeInTheDocument();
+    } finally {
+      vi.stubGlobal('fetch', originalFetch);
+      if (originalSettings === null) {
+        localStorage.removeItem('upcomingTaskSettings');
+      } else {
+        localStorage.setItem('upcomingTaskSettings', originalSettings);
+      }
+      setIntervalSpy.mockRestore();
+      dateNowSpy.mockRestore();
+    }
+  });
 });
 
 //Creates a list
