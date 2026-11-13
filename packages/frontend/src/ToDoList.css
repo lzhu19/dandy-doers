@@ -142,6 +142,117 @@ tr.drop-target td {
   letter-spacing: 0.25px;
 }
 
+.upcoming-settings-trigger {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 1px solid #9e8eab;
+  border-radius: 6px;
+  background: #594b65;
+  color: #fffbf2;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.upcoming-settings-trigger:hover,
+.upcoming-settings-trigger:focus-visible {
+  border-color: #ffdf8c;
+  background: #4b3f56;
+}
+
+.upcoming-settings-trigger:focus-visible {
+  outline: 2px solid #ffdf8c;
+  outline-offset: 2px;
+}
+
+.task-details-popup.upcoming-settings-popup {
+  position: relative;
+  width: 380px;
+  height: 250px;
+  box-sizing: border-box;
+  padding: 44px 30px 22px;
+  overflow: visible;
+}
+
+.task-details-popup.upcoming-settings-popup-period {
+  height: 330px;
+}
+
+.upcoming-settings-options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  color: #3a3042;
+  font-size: 14px;
+}
+
+.upcoming-settings-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.upcoming-settings-option input[type='radio'] {
+  flex: 0 0 auto;
+  margin: 2px 0 0;
+  accent-color: #594b65;
+}
+
+.upcoming-settings-days-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 26px;
+  padding-bottom: 12px;
+}
+
+.upcoming-settings-days-label input {
+  width: 72px;
+  padding: 6px 8px;
+  border: 1px solid #9e8eab;
+  border-radius: 6px;
+  color: #3a3042;
+  font: inherit;
+}
+
+.upcoming-settings-apply {
+  align-self: flex-end;
+  padding: 6px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #594b65;
+  color: #fffbf2;
+  cursor: pointer;
+}
+
+.upcoming-settings-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.upcoming-settings-close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #3a3042;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .task-details-popup.upcoming-settings-popup,
+  .task-details-popup.upcoming-settings-popup-period {
+    width: min(380px, 90vw);
+  }
+}
+
 .list-button {
   width: 261px;
   height: 40px;
