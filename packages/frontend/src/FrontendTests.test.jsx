@@ -1258,12 +1258,18 @@ describe('editListName', () => {
       within(listHeading).getByRole('button', { name: 'School' })
     );
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
+    expect(
+      screen.queryByRole('button', { name: 'Delete List' })
+    ).not.toBeInTheDocument();
     await user.clear(renameInput);
     await user.type(renameInput, 'Classes');
     await user.click(document.body);
 
     expect(
       await screen.findByRole('heading', { name: 'Classes' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Delete List' })
     ).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:8000/lists/list-123',
