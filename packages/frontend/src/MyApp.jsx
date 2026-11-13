@@ -40,6 +40,7 @@ function MyApp() {
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
   const [isUpcomingSettingsOpen, setIsUpcomingSettingsOpen] = useState(false);
   const [upcomingSettings, setUpcomingSettings] = useState(getUpcomingSettings);
+  const [upcomingClock, setUpcomingClock] = useState(null);
   const [upcomingDraftMode, setUpcomingDraftMode] = useState(
     upcomingSettings.mode
   );
@@ -75,6 +76,23 @@ function MyApp() {
   const [token, setToken] = useState(
     localStorage.getItem('token') ?? INVALID_TOKEN
   );
+
+  useEffect(() => {
+    const hasSelectedPeriod =
+      upcomingSettings.mode === 'period' &&
+      Number.isInteger(upcomingSettings.days) &&
+      upcomingSettings.days >= 1 &&
+      upcomingSettings.days <= 30;
+    if (!hasSelectedPeriod) return undefined;
+
+    const updateUpcomingClock = () => setUpcomingClock(Date.now());
+    const initialUpdateId = setTimeout(updateUpcomingClock, 0);
+    const intervalId = setInterval(updateUpcomingClock, 5 * 60 * 1000);
+    return () => {
+      clearTimeout(initialUpdateId);
+      clearInterval(intervalId);
+    };
+  }, [upcomingSettings.mode, upcomingSettings.days]);
 
   function saveToken(newToken) {
     localStorage.setItem('token', newToken);
@@ -681,11 +699,12 @@ function MyApp() {
         return false;
       }
       if (upcomingSettings.mode === 'all') return true;
+      if (upcomingClock === null) return false;
 
       const deadlineTime = new Date(task.deadline).getTime();
-      const now = Date.now();
-      const periodEnd = now + upcomingSettings.days * 24 * 60 * 60 * 1000;
-      return deadlineTime >= now && deadlineTime <= periodEnd;
+      const periodEnd =
+        upcomingClock + upcomingSettings.days * 24 * 60 * 60 * 1000;
+      return deadlineTime >= upcomingClock && deadlineTime <= periodEnd;
     })
     .sort(
       (first, second) => new Date(first.deadline) - new Date(second.deadline)
@@ -709,6 +728,9 @@ function MyApp() {
           : upcomingSettings.days,
     };
     localStorage.setItem(UPCOMING_SETTINGS_KEY, JSON.stringify(settings));
+    if (settings.mode === 'period') {
+      setUpcomingClock(Date.now());
+    }
     setUpcomingSettings(settings);
     setIsUpcomingSettingsOpen(false);
   }

@@ -352,6 +352,65 @@ describe('rendering', () => {
       }
     }
   });
+
+  it('updates Upcoming when a task enters the selected period', async () => {
+    const now = new Date('2027-01-15T10:00:00.000Z');
+    const nowTime = now.getTime();
+    const dateNowSpy = vi.spyOn(Date, 'now').mockReturnValue(nowTime);
+    const originalFetch = fetch;
+    const originalSettings = localStorage.getItem('upcomingTaskSettings');
+    const originalSetInterval = globalThis.setInterval;
+    const refreshCallbacks = [];
+    const setIntervalSpy = vi
+      .spyOn(globalThis, 'setInterval')
+      .mockImplementation((callback, delay, ...args) => {
+        if (delay === 5 * 60 * 1000) {
+          refreshCallbacks.push(callback);
+          return 999;
+        }
+        return originalSetInterval(callback, delay, ...args);
+      });
+    localStorage.setItem(
+      'upcomingTaskSettings',
+      JSON.stringify({ mode: 'period', days: 1 })
+    );
+    installApi({
+      tasks: [
+        {
+          ...activeTask,
+          deadline: new Date(
+            now.getTime() + 24 * 60 * 60 * 1000 + 500
+          ).toISOString(),
+        },
+      ],
+    });
+
+    try {
+      await openApp();
+
+      const upcomingBox = document.querySelector('.upcoming-box');
+      expect(
+        within(upcomingBox).queryByText('Homework')
+      ).not.toBeInTheDocument();
+      expect(refreshCallbacks).toHaveLength(1);
+
+      dateNowSpy.mockReturnValue(nowTime + 5 * 60 * 1000);
+      act(() => {
+        refreshCallbacks[0]();
+      });
+
+      expect(within(upcomingBox).getByText('Homework')).toBeInTheDocument();
+    } finally {
+      vi.stubGlobal('fetch', originalFetch);
+      if (originalSettings === null) {
+        localStorage.removeItem('upcomingTaskSettings');
+      } else {
+        localStorage.setItem('upcomingTaskSettings', originalSettings);
+      }
+      setIntervalSpy.mockRestore();
+      dateNowSpy.mockRestore();
+    }
+  });
 });
 
 //Creates a list
