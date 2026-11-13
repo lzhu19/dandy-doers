@@ -157,6 +157,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.setItem('token', 'test-token');
 });
 
 afterAll(() => {
@@ -293,6 +294,9 @@ describe('deleteList', () => {
     // Verify the DELETE request used the correct URL and method.
     expect(fetch).toHaveBeenCalledWith('http://localhost:8000/lists/list-123', {
       method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer test-token',
+      },
     });
   });
 });
@@ -384,6 +388,7 @@ describe('createTask', () => {
         method: 'POST',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({
           name: 'Homework 1',
@@ -475,6 +480,7 @@ describe('archiveTask', () => {
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ archived: true }),
       }
@@ -561,6 +567,7 @@ describe('deleteTask', () => {
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ deleted: true }),
       }
@@ -658,6 +665,7 @@ describe('undoDeleteTask', () => {
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ deleted: false }),
       }
@@ -755,6 +763,7 @@ describe('undoArchiveTask', () => {
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ archived: false }),
       }
@@ -833,6 +842,9 @@ describe('permanentlyDeleteTask', () => {
     // Verify the DELETE request
     expect(fetch).toHaveBeenCalledWith('http://localhost:8000/tasks/task-123', {
       method: 'DELETE',
+      headers: {
+        Authorization: 'Bearer test-token',
+      },
     });
   });
 });
@@ -1122,6 +1134,7 @@ describe('reorderTasks', () => {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: 'Bearer test-token',
           },
           body: JSON.stringify({
             taskIds: ['task-2', 'task-1', 'task-3'],
@@ -2389,6 +2402,7 @@ describe('delete/archive a task from search bar and removes it from search query
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ deleted: true }),
       }
@@ -2509,6 +2523,7 @@ describe('delete/archive a task from search bar and removes it from search query
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ archived: true }),
       }
@@ -3923,6 +3938,7 @@ describe('bulk archiving', () => {
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ archived: true }),
       }
@@ -3934,6 +3950,7 @@ describe('bulk archiving', () => {
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ archived: true }),
       }
@@ -4369,6 +4386,7 @@ describe('bulk deleting', () => {
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ deleted: true }),
       }
@@ -4380,6 +4398,7 @@ describe('bulk deleting', () => {
         method: 'PUT',
         headers: {
           'Content-type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ deleted: true }),
       }
@@ -4814,6 +4833,7 @@ describe('bulk moving', () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ listId: 'list-456' }),
       }
@@ -4825,6 +4845,7 @@ describe('bulk moving', () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: 'Bearer test-token',
         },
         body: JSON.stringify({ listId: 'list-456' }),
       }
@@ -5323,6 +5344,7 @@ describe('bulk moving', () => {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: 'Bearer test-token',
           },
           body: JSON.stringify({ listId: 'list-456' }),
         }

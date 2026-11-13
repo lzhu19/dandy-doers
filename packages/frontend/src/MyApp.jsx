@@ -7,6 +7,9 @@ import DeleteList from './DeleteList';
 import ListSection from './ListSection';
 import SearchBar from './SearchBar';
 import TaskDetails from './TaskDetails';
+import Login from './Login';
+
+const INVALID_TOKEN = 'Invalid token';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
@@ -32,20 +35,90 @@ function MyApp() {
 
   const [deletedTasks, setDeletedTasks] = useState([]);
   const [isMoveTaskOpen, setIsMoveTaskOpen] = useState(false);
-  
-  
-  const [popupMessage, setPopupMessage] = useState("");
+
+  const [popupMessage, setPopupMessage] = useState('');
   const [popupUndo, setPopupUndo] = useState(null);
   const popupTimeout = useRef(null);
   const [popupTaskId, setPopupTaskId] = useState(null);
 
+  const [token, setToken] = useState(
+    localStorage.getItem('token') ?? INVALID_TOKEN
+  );
+
+  function saveToken(newToken) {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+  }
+
+  const [message, setMessage] = useState('');
+
+  function addAuthHeader(otherHeaders = {}) {
+    if (token === INVALID_TOKEN) {
+      return otherHeaders;
+    } else {
+      return {
+        ...otherHeaders,
+        Authorization: `Bearer ${token}`,
+      };
+    }
+  }
+
+  function loginUser(creds) {
+    return fetch(`http://localhost:8000/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(creds),
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          setMessage('');
+          return response.json().then((payload) => saveToken(payload.token));
+        }
+        setMessage('Login failed. Incorrect username or password.');
+      })
+      .catch((error) => {
+        setMessage(`Login Error: ${error}`);
+      });
+  }
+
+  function signupUser(creds) {
+    return fetch(`http://localhost:8000/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(creds),
+    })
+      .then((response) => {
+        if (response.status === 201) {
+          setMessage('');
+          return response.json().then((payload) => saveToken(payload.token));
+        }
+        if (response.status === 409) {
+          setMessage(
+            'Username already exists, time to channel that creativity.'
+          );
+        } else {
+          setMessage(
+            `Sign up failed. Please enter a valid username and password.`
+          );
+        }
+      })
+      .catch((error) => setMessage(`Signup Error: ${error}`));
+  }
+
   function fetchTasks() {
-    const promise = fetch('http://localhost:8000/tasks');
-    return promise;
+    return fetch('http://localhost:8000/tasks', {
+      headers: addAuthHeader(),
+    });
   }
 
   function fetchLists() {
-    return fetch('http://localhost:8000/lists');
+    return fetch('http://localhost:8000/lists', {
+      headers: addAuthHeader(),
+    });
   }
 
   async function createList(event) {
@@ -61,9 +134,9 @@ function MyApp() {
     try {
       const response = await fetch('http://localhost:8000/lists', {
         method: 'POST',
-        headers: {
+        headers: addAuthHeader({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ name }),
       });
       if (response.status !== 201) {
@@ -95,7 +168,7 @@ function MyApp() {
     try {
       const response = await fetch(
         `http://localhost:8000/lists/${currentList._id}`,
-        { method: 'DELETE' }
+        { method: 'DELETE', headers: addAuthHeader() }
       );
       if (response.status !== 204) {
         throw new Error(`Unable to delete list (${response.status}).`);
@@ -124,40 +197,39 @@ function MyApp() {
       setIsDeletingList(false);
     }
   }
-const displayPopup = (message, undoAction, taskId) => {
-  setPopupMessage(message);
-  setPopupUndo(() => undoAction);
-  setPopupTaskId(taskId);
+  const displayPopup = (message, undoAction, taskId) => {
+    setPopupMessage(message);
+    setPopupUndo(() => undoAction);
+    setPopupTaskId(taskId);
 
-  clearTimeout(popupTimeout.current);
+    clearTimeout(popupTimeout.current);
 
-  popupTimeout.current = setTimeout(() => {
-    setPopupMessage("");
+    popupTimeout.current = setTimeout(() => {
+      setPopupMessage('');
+      setPopupUndo(null);
+      setPopupTaskId(null);
+    }, 10000);
+  };
+
+  const dismissPopup = () => {
+    clearTimeout(popupTimeout.current);
+    setPopupMessage('');
     setPopupUndo(null);
     setPopupTaskId(null);
-  }, 10000);
-};
+  };
 
-
-const dismissPopup = () => {
-  clearTimeout(popupTimeout.current);
-  setPopupMessage("");
-  setPopupUndo(null);
-  setPopupTaskId(null);
-};
-
-const dismissPopupForTask = (id) => {
-  if (popupTaskId === id) {
-    dismissPopup();
-  }
-};
+  const dismissPopupForTask = (id) => {
+    if (popupTaskId === id) {
+      dismissPopup();
+    }
+  };
 
   function postTask(job) {
     const promise = fetch('http://localhost:8000/tasks', {
       method: 'POST',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ ...job, listId: selectedListId }),
     });
     return promise;
@@ -168,9 +240,9 @@ const dismissPopupForTask = (id) => {
     console.log('Archive clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/archive`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ archived: true }),
     });
 
@@ -191,11 +263,7 @@ const dismissPopupForTask = (id) => {
           setSelectedTaskId((previous) =>
             previous.filter((taskId) => taskId !== id)
           );
-          displayPopup(
-            "Task archived",
-            () => restoreArchivedTask(id),
-            id
-          );
+          displayPopup('Task archived', () => restoreArchivedTask(id), id);
         }
       })
       .catch((error) => {
@@ -208,9 +276,9 @@ const dismissPopupForTask = (id) => {
     console.log('Delete clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/delete`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ deleted: true }),
     });
 
@@ -235,11 +303,7 @@ const dismissPopupForTask = (id) => {
             previous.filter((taskId) => taskId !== id)
           );
 
-          displayPopup(
-            "Task deleted",
-            () => restoreDeletedTask(id),
-            id
-          );
+          displayPopup('Task deleted', () => restoreDeletedTask(id), id);
         }
       })
       .catch((error) => {
@@ -254,9 +318,9 @@ const dismissPopupForTask = (id) => {
       `http://localhost:8000/tasks/${id}/restore-archived`,
       {
         method: 'PUT',
-        headers: {
+        headers: addAuthHeader({
           'Content-type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ archived: false }),
       }
     );
@@ -269,10 +333,9 @@ const dismissPopupForTask = (id) => {
       .then((restoredTask) => {
         if (restoredTask !== null) {
           setTasks((currentTasks) => [...currentTasks, restoredTask]);
-          
+
           setArchivedTasks((currentArchivedTasks) =>
             currentArchivedTasks.filter((task) => task._id !== id)
-
           );
           dismissPopupForTask(id);
         }
@@ -287,9 +350,9 @@ const dismissPopupForTask = (id) => {
     console.log('Restore deleted clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/restore-deleted`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ deleted: false }),
     });
 
@@ -301,7 +364,7 @@ const dismissPopupForTask = (id) => {
       .then((restoredTask) => {
         if (restoredTask !== null) {
           setTasks((currentTasks) => [...currentTasks, restoredTask]);
-          
+
           setDeletedTasks((currentDeletedTasks) =>
             currentDeletedTasks.filter((task) => task._id !== id)
           );
@@ -317,6 +380,7 @@ const dismissPopupForTask = (id) => {
     // removes a task with the given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
       method: 'DELETE',
+      headers: addAuthHeader(),
     });
 
     promise
@@ -343,9 +407,9 @@ const dismissPopupForTask = (id) => {
     // updates a task's name for given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ name: newEdit }),
     });
 
@@ -379,9 +443,9 @@ const dismissPopupForTask = (id) => {
     // updates a task's name and notes for given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify(updatedFields),
     });
 
@@ -414,9 +478,9 @@ const dismissPopupForTask = (id) => {
     try {
       const response = await fetch(`http://localhost:8000/lists/${id}`, {
         method: 'PUT',
-        headers: {
+        headers: addAuthHeader({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ name }),
       });
       if (response.status !== 200) {
@@ -456,9 +520,9 @@ const dismissPopupForTask = (id) => {
 
     return fetch(`http://localhost:8000/tasks/${id}/move`, {
       method: 'PATCH',
-      headers: {
+      headers: addAuthHeader({
         'Content-Type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ listId: targetListId }),
     })
       .then((response) => {
@@ -487,6 +551,7 @@ const dismissPopupForTask = (id) => {
   }
 
   useEffect(() => {
+    if (token === INVALID_TOKEN) return;
     fetchTasks()
       .then((res) => res.json()) // convert response to json
       .then((tasks) => {
@@ -521,7 +586,7 @@ const dismissPopupForTask = (id) => {
       .catch((error) => {
         console.log(error);
       });
-  }, []); // empty array here indicates that hook should be called only when component first mounts
+  }, [token]);
 
   const currentList =
     lists.find((list) => list._id === selectedListId) ?? lists[0];
@@ -568,9 +633,9 @@ const dismissPopupForTask = (id) => {
         `http://localhost:8000/lists/${currentList._id}/reorder-tasks`,
         {
           method: 'PUT',
-          headers: {
+          headers: addAuthHeader({
             'Content-Type': 'application/json',
-          },
+          }),
           body: JSON.stringify({
             taskIds: reordered.map((task) => task._id),
           }),
@@ -585,6 +650,16 @@ const dismissPopupForTask = (id) => {
     } catch (error) {
       console.error('Could not save task order:', error);
     }
+  }
+
+  if (token === INVALID_TOKEN) {
+    return (
+      <Login
+        handleLogin={loginUser}
+        handleSignup={signupUser}
+        message={message}
+      />
+    );
   }
 
   return (
@@ -721,23 +796,23 @@ const dismissPopupForTask = (id) => {
           )}
         </main>
       </div>
-        {popupMessage && (
-  <div className="popup">
-    <span>{popupMessage}</span>
+      {popupMessage && (
+        <div className="popup">
+          <span>{popupMessage}</span>
 
-    {popupUndo && (
-      <button
-        className="undo-button"
-        onClick={() => {
-          popupUndo();
-          dismissPopup();
-        }}
-      >
-        UNDO
-      </button>
-    )}
-  </div>
-)}
+          {popupUndo && (
+            <button
+              className="undo-button"
+              onClick={() => {
+                popupUndo();
+                dismissPopup();
+              }}
+            >
+              UNDO
+            </button>
+          )}
+        </div>
+      )}
       {isCreateListOpen && (
         <div className="list-dialog-backdrop">
           <section

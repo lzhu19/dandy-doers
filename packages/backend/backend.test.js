@@ -27,6 +27,12 @@ jest.unstable_mockModule('./list-services.js', () => ({
   updateListName: jest.fn(),
 }));
 
+jest.unstable_mockModule('./auth.js', () => ({
+  registerUser: (req, res) => res.sendStatus(201),
+  authenticateUser: (req, res, next) => next(),
+  loginUser: (req, res) => res.sendStatus(200),
+}));
+
 const { default: app, startServer } = await import('./backend.js');
 const {
   getTasks,
