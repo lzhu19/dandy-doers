@@ -1602,6 +1602,22 @@ describe('Table interactions', () => {
 });
 
 describe('TaskDetails component', () => {
+  it('displays the task creation time as a right-aligned subtitle', () => {
+    const createdAt = '2026-10-28T06:00:00.000Z';
+    const { container } = render(
+      <TaskDetails
+        task={{ ...activeTask, createdAt }}
+        saveTaskDetails={vi.fn()}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    const timestamp = container.querySelector('.task-created-at');
+    expect(timestamp).toHaveAttribute('datetime', createdAt);
+    expect(timestamp).toHaveTextContent(/^Created at /);
+    expect(timestamp).toHaveTextContent(/\d/);
+  });
+
   it('rejects a blank name and saves edited name and notes', async () => {
     const user = userEvent.setup();
     const saveTaskDetails = vi.fn();

@@ -4,6 +4,9 @@ function TaskDetails(props) {
   //start w/ clicked task's current vals
   const [name, setName] = useState(props.task.name);
   const [notes, setNotes] = useState(props.task.notes ?? '');
+  const createdAt = props.task.createdAt
+    ? new Date(props.task.createdAt)
+    : null;
 
   function handleSave() {
     if (!name.trim()) return;
@@ -59,6 +62,14 @@ function TaskDetails(props) {
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
+          {createdAt && !Number.isNaN(createdAt.getTime()) && (
+              <time
+                className="task-created-at"
+                dateTime={createdAt.toISOString()}
+              >
+                Created at {createdAt.toLocaleString()}
+              </time>
+          )}
 
           <label className="task-details-label" htmlFor="task-details-notes">
             Notes

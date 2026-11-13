@@ -661,6 +661,13 @@ tr.drop-target td {
   padding: 24px 50px;
 }
 
+.task-created-at {
+  align-self: flex-end;
+  margin: -20px 0 28px;
+  color: #888;
+  font-size: 0.8em;
+}
+
 .task-details-label {
   display: block;
   margin: 0 0 10px 0;
