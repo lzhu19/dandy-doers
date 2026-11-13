@@ -7,6 +7,7 @@ import DeleteList from './DeleteList';
 import ListSection from './ListSection';
 import SearchBar from './SearchBar';
 import TaskDetails from './TaskDetails';
+import DeadlineCountdown from './DeadlineCountdown';
 import Login from './Login';
 
 const INVALID_TOKEN = 'Invalid token';
@@ -645,6 +646,14 @@ function MyApp() {
   const currentTasks = tasks.filter(
     (task) => String(task.listId) === String(currentList?._id)
   );
+  const upcomingTasks = tasks
+    .filter(
+      (task) =>
+        task.deadline && !Number.isNaN(new Date(task.deadline).getTime())
+    )
+    .sort(
+      (first, second) => new Date(first.deadline) - new Date(second.deadline)
+    );
 
   //finds the task of which edit icon was clicked
   const taskDetails = tasks.find((task) => task._id === taskDetailsId);
@@ -723,7 +732,28 @@ function MyApp() {
           <div>
             <h2 className="sidebar-section-title">Upcoming</h2>
             <div className="upcoming-box">
-              <p className="upcoming-empty-text">No upcoming tasks</p>
+              {upcomingTasks.length === 0 ? (
+                <p className="upcoming-empty-text">No upcoming tasks</p>
+              ) : (
+                <table className="upcoming-task-table">
+                  <tbody>
+                    {upcomingTasks.map((task) => (
+                      <tr key={task._id}>
+                        <td>
+                          <div className="upcoming-task-name">{task.name}</div>
+                          <DeadlineCountdown
+                            deadline={task.deadline}
+                            className="task-deadline-countdown task-deadline-countdown-list"
+                            onExpire={() =>
+                              clearExpiredDeadline(task._id, task.deadline)
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
 

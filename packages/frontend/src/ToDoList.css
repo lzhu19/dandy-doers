@@ -105,12 +105,35 @@ tr.drop-target td {
 .upcoming-box {
   width: 294px;
   height: 269px;
+  box-sizing: border-box;
+  overflow-y: auto;
   border-radius: 15px;
   border: 2px solid #9e8eab;
   background: #594b65;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.upcoming-task-table {
+  align-self: stretch;
+  width: 100%;
+  margin: 0;
+  color: #fffbf2;
+}
+
+.upcoming-task-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #9e8eab;
+  overflow-wrap: anywhere;
+}
+
+.upcoming-task-name {
+  color: #fffbf2;
+}
+
+.upcoming-task-table .task-deadline-countdown {
+  text-align: left;
 }
 
 .upcoming-empty-text {

@@ -176,6 +176,55 @@ describe('rendering', () => {
       await screen.findByText('You currently have no task lists')
     ).toBeInTheDocument();
   });
+
+  it('shows deadline tasks in Upcoming without making them interactive', async () => {
+    const user = userEvent.setup();
+    const originalFetch = fetch;
+    const firstUpcoming = {
+      ...activeTask,
+      deadline: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    };
+    const secondUpcoming = {
+      ...activeTask,
+      _id: 'task-4',
+      name: 'Essay',
+      listId: 'list-2',
+      deadline: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    };
+    const noDeadlineTask = {
+      ...activeTask,
+      _id: 'task-5',
+      name: 'No deadline',
+    };
+    const { fetchMock } = installApi({
+      tasks: [secondUpcoming, noDeadlineTask, firstUpcoming],
+      lists: [list, { _id: 'list-2', name: 'Work' }],
+    });
+
+    try {
+      await openApp();
+
+      const upcomingTable = document.querySelector('.upcoming-task-table');
+      const upcomingRows = within(upcomingTable).getAllByRole('row');
+      expect(upcomingRows).toHaveLength(2);
+      expect(within(upcomingRows[0]).getByText('Homework')).toBeInTheDocument();
+      expect(within(upcomingRows[0]).getByText(/Due in/)).toBeInTheDocument();
+      expect(within(upcomingRows[1]).getByText('Essay')).toBeInTheDocument();
+      expect(
+        within(upcomingTable).queryByText('No deadline')
+      ).not.toBeInTheDocument();
+      expect(
+        within(upcomingTable).queryByRole('button')
+      ).not.toBeInTheDocument();
+
+      const requestCount = fetchMock.mock.calls.length;
+      await user.click(within(upcomingRows[0]).getByText('Homework'));
+      expect(fetchMock).toHaveBeenCalledTimes(requestCount);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    } finally {
+      vi.stubGlobal('fetch', originalFetch);
+    }
+  });
 });
 
 //Creates a list
