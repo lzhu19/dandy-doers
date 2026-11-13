@@ -6,6 +6,8 @@
   "main": "backend.js",
   "scripts": {
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:mocks": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand task-services.test.js list-services.test.js",
+    "test:memory": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand data-layer-memory.test.js",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "dev": "npx nodemon backend.js",
     "start": "node backend.js"
@@ -21,6 +23,7 @@
   "devDependencies": {
     "cross-env": "^10.1.0",
     "mockingoose": "^3.0.0",
+    "mongodb-memory-server": "^11.3.0",
     "supertest": "^7.3.1"
   }
 }

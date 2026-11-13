@@ -27,6 +27,8 @@
     "test:coverage-frontend": "npm run test:coverage --workspace=frontend",
     "test:coverage-backend": "npm run test:coverage --workspace=backend",
     "test-backend": "npm run test --workspace=backend",
+    "test-backend-mocks": "npm run test:mocks --workspace=backend",
+    "test-backend-memory": "npm run test:memory --workspace=backend",
     "preview": "vite preview",
     "format": "prettier --write './**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc",
     "lint": "eslint ."
