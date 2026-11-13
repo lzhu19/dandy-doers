@@ -431,6 +431,9 @@ describe('PUT /tasks/:id/deadline', () => {
   });
 
   it('rejects invalid and past deadlines', async () => {
+    const nonStringResponse = await request(app)
+      .put('/tasks/task-1/deadline')
+      .send({ deadline: 12345 });
     const invalidResponse = await request(app)
       .put('/tasks/task-1/deadline')
       .send({ deadline: 'not-a-date' });
@@ -438,8 +441,14 @@ describe('PUT /tasks/:id/deadline', () => {
       .put('/tasks/task-1/deadline')
       .send({ deadline: '2000-01-01T00:00:00.000Z' });
 
+    expect(nonStringResponse.status).toBe(400);
+    expect(nonStringResponse.text).toBe(
+      'A valid deadline timestamp is required.'
+    );
     expect(invalidResponse.status).toBe(400);
-    expect(invalidResponse.text).toBe('A valid deadline timestamp is required.');
+    expect(invalidResponse.text).toBe(
+      'A valid deadline timestamp is required.'
+    );
     expect(pastResponse.status).toBe(400);
     expect(pastResponse.text).toBe('The deadline must be in the future.');
     expect(updateDeadline).not.toHaveBeenCalled();
