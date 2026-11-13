@@ -12,7 +12,7 @@ function DeleteList(props) {
                   'Unknown list'}
               </span>
             </div>
-            <div className="delete-list-buttons">
+            <div className="archive-list-buttons">
               <button onClick={() => props.restoreDeletedTask(task._id)}>
                 Restore
               </button>

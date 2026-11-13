@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DeadlineCountdown from './DeadlineCountdown';
 
 function getLocalDateParts(date) {
@@ -33,14 +33,27 @@ function to24Hour(hour, meridiem) {
 function TaskDetails(props) {
   const [name, setName] = useState(props.task.name);
   const [notes, setNotes] = useState(props.task.notes ?? '');
+  const detailsDialogRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = detailsDialogRef.current;
+    dialog.showModal();
+
+    return () => {
+      dialog.close();
+    };
+  }, []);
+
   const createdAt = props.task.createdAt
     ? new Date(props.task.createdAt)
     : null;
+
   const initialDeadline =
     props.task.deadline &&
     !Number.isNaN(new Date(props.task.deadline).getTime())
       ? getLocalDateParts(new Date(props.task.deadline))
       : getNextMinuteParts();
+
   const [hasDeadline, setHasDeadline] = useState(Boolean(props.task.deadline));
   const [deadlineDate, setDeadlineDate] = useState(initialDeadline.date);
   const [deadlineHour, setDeadlineHour] = useState(initialDeadline.hour);
@@ -55,9 +68,11 @@ function TaskDetails(props) {
   const nextMinute = getNextMinuteParts();
   const today = getLocalDateParts(new Date()).date;
   const isToday = deadlineDate === today;
+
   const selectedDeadline = deadlineDate
     ? new Date(`${deadlineDate}T${deadlineHour}:${deadlineMinute}:00`)
     : null;
+
   const deadlineIsInPast =
     !selectedDeadline ||
     Number.isNaN(selectedDeadline.getTime()) ||
@@ -69,6 +84,7 @@ function TaskDetails(props) {
 
   async function handleSave() {
     if (!name.trim()) return;
+
     if (
       hasDeadline &&
       (deadlineIsInPast ||
@@ -81,7 +97,9 @@ function TaskDetails(props) {
 
     setSaveError('');
     setIsSaving(true);
+
     const updatedFields = { name, notes };
+
     if (hasDeadline || props.task.deadline) {
       updatedFields.deadline = hasDeadline
         ? selectedDeadline.toISOString()
@@ -98,243 +116,257 @@ function TaskDetails(props) {
   }
 
   return (
-    <div className="task-details-bg" onClick={props.closeTaskDetails}>
-      <section
-        className="task-details-popup"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Task details"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {/* 
+    <dialog
+      ref={detailsDialogRef}
+      className="task-details-popup"
+      aria-labelledby="task-details-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        detailsDialogRef.current.close();
+        props.closeTaskDetails();
+      }}
+    >
+      {/*
         task-details-header: whole top row of pop up
         task-details-heading: left side - title
         task-details-buttons: right side - cancel + save buttons
-        */}
-        <div className="task-details-header">
-          <div className="task-details-heading">
-            <h2 className="task-details-title">Task details</h2>
-          </div>
-          <div className="task-details-buttons">
-            <button
-              className="task-details-cancel"
-              type="button"
-              onClick={props.closeTaskDetails}
-            >
-              Cancel
-            </button>
-            <button
-              className="add-task-button task-details-save"
-              type="button"
-              disabled={isSaving}
-              onClick={handleSave}
-            >
-              Save
-            </button>
-          </div>
+      */}
+      <div className="task-details-header">
+        <div className="task-details-heading">
+          <h2 className="task-details-title" id="task-details-title">
+            Task details
+          </h2>
         </div>
-        <hr className="task-details-divider" />
+        <div className="task-details-buttons">
+          <button
+            className="task-details-cancel"
+            type="button"
+            onClick={() => {
+              detailsDialogRef.current.close();
+              props.closeTaskDetails();
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            className="add-task-button task-details-save"
+            disabled={isSaving}
+            type="button"
+            onClick={handleSave}
+          >
+            Save
+          </button>
+        </div>
+      </div>
 
-        <div className="task-details-body">
-          <label className="task-details-label" htmlFor="task-details-name">
-            Task
-          </label>
+      <hr className="task-details-divider" />
+
+      <div className="task-details-body">
+        <label className="task-details-label" htmlFor="task-details-name">
+          Task
+        </label>
+        <input
+          className="task-details-input"
+          type="text"
+          id="task-details-name"
+          name="name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+
+        {createdAt && !Number.isNaN(createdAt.getTime()) && (
+          <time className="task-created-at" dateTime={createdAt.toISOString()}>
+            Created at {createdAt.toLocaleString()}
+          </time>
+        )}
+
+        <DeadlineCountdown
+          deadline={props.task.deadline}
+          className="task-created-at task-deadline-countdown task-deadline-countdown-popup"
+          onExpire={() =>
+            props.clearExpiredDeadline?.(props.task._id, props.task.deadline)
+          }
+        />
+
+        <div className="task-deadline-toggle">
           <input
-            className="task-details-input"
-            type="text"
-            id="task-details-name"
-            name="name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
+            id="task-deadline-enabled"
+            type="checkbox"
+            checked={hasDeadline}
+            onChange={(event) => {
+              setHasDeadline(event.target.checked);
+              setSaveError('');
+            }}
           />
-          {createdAt && !Number.isNaN(createdAt.getTime()) && (
-            <time
-              className="task-created-at"
-              dateTime={createdAt.toISOString()}
-            >
-              Created at {createdAt.toLocaleString()}
-            </time>
-          )}
-          <DeadlineCountdown
-            deadline={props.task.deadline}
-            className="task-created-at task-deadline-countdown task-deadline-countdown-popup"
-            onExpire={() =>
-              props.clearExpiredDeadline?.(props.task._id, props.task.deadline)
-            }
-          />
+          <label htmlFor="task-deadline-enabled">Set deadline?</label>
+        </div>
 
-          <div className="task-deadline-toggle">
+        {hasDeadline && (
+          <div className="task-deadline-fields">
+            <label
+              className="task-deadline-date-label"
+              htmlFor="task-deadline-date"
+            >
+              Date Due
+            </label>
+            <label
+              className="task-deadline-time-label"
+              htmlFor="task-deadline-hour"
+            >
+              Time Due (XX:XX)
+            </label>
             <input
-              id="task-deadline-enabled"
-              type="checkbox"
-              checked={hasDeadline}
+              id="task-deadline-date"
+              type="date"
+              min={today}
+              value={deadlineDate}
               onChange={(event) => {
-                setHasDeadline(event.target.checked);
+                setDeadlineDate(event.target.value);
+                if (
+                  event.target.value === today &&
+                  (deadlineHour < nextMinute.hour ||
+                    (deadlineHour === nextMinute.hour &&
+                      deadlineMinute < nextMinute.minute))
+                ) {
+                  setDeadlineHour(nextMinute.hour);
+                  setDeadlineMinute(nextMinute.minute);
+                }
                 setSaveError('');
               }}
             />
-            <label htmlFor="task-deadline-enabled">Set deadline?</label>
-          </div>
 
-          {hasDeadline && (
-            <div className="task-deadline-fields">
-              <label
-                className="task-deadline-date-label"
-                htmlFor="task-deadline-date"
-              >
-                Date Due
-              </label>
-              <label
-                className="task-deadline-time-label"
-                htmlFor="task-deadline-hour"
-              >
-                Time Due (XX:XX)
-              </label>
-              <input
-                id="task-deadline-date"
-                type="date"
-                min={today}
-                value={deadlineDate}
+            <div
+              className={`task-deadline-time ${
+                use24HourTime ? 'is-24-hour' : ''
+              }`}
+            >
+              <select
+                id="task-deadline-hour"
+                aria-label="Deadline hour"
+                value={displayedHour}
                 onChange={(event) => {
-                  setDeadlineDate(event.target.value);
-                  if (
-                    event.target.value === today &&
-                    (deadlineHour < nextMinute.hour ||
-                      (deadlineHour === nextMinute.hour &&
-                        deadlineMinute < nextMinute.minute))
-                  ) {
-                    setDeadlineHour(nextMinute.hour);
-                    setDeadlineMinute(nextMinute.minute);
-                  }
+                  setDeadlineHour(
+                    use24HourTime
+                      ? event.target.value
+                      : to24Hour(event.target.value, displayedMeridiem)
+                  );
                   setSaveError('');
                 }}
-              />
-              <div
-                className={`task-deadline-time ${
-                  use24HourTime ? 'is-24-hour' : ''
-                }`}
               >
+                {Array.from({ length: use24HourTime ? 24 : 12 }, (_, index) => {
+                  const hour = use24HourTime
+                    ? String(index).padStart(2, '0')
+                    : String(index + 1).padStart(2, '0');
+
+                  const hour24 = use24HourTime
+                    ? hour
+                    : to24Hour(hour, displayedMeridiem);
+
+                  const isInPast =
+                    isToday &&
+                    (hour24 < nextMinute.hour ||
+                      (hour24 === nextMinute.hour &&
+                        deadlineMinute < nextMinute.minute));
+
+                  return (
+                    <option key={hour} value={hour} disabled={isInPast}>
+                      {hour}
+                    </option>
+                  );
+                })}
+              </select>
+
+              <span className="task-deadline-separator" aria-hidden="true">
+                :
+              </span>
+
+              <select
+                id="task-deadline-minute"
+                aria-label="Deadline minute"
+                value={deadlineMinute}
+                onChange={(event) => {
+                  setDeadlineMinute(event.target.value);
+                  setSaveError('');
+                }}
+              >
+                {Array.from({ length: 60 }, (_, minute) => {
+                  const value = String(minute).padStart(2, '0');
+                  const isInPast =
+                    isToday &&
+                    deadlineHour === nextMinute.hour &&
+                    value < nextMinute.minute;
+
+                  return (
+                    <option key={value} value={value} disabled={isInPast}>
+                      {value}
+                    </option>
+                  );
+                })}
+              </select>
+
+              {!use24HourTime && (
                 <select
-                  id="task-deadline-hour"
-                  aria-label="Deadline hour"
-                  value={displayedHour}
+                  aria-label="Deadline AM or PM"
+                  value={displayedMeridiem}
                   onChange={(event) => {
                     setDeadlineHour(
-                      use24HourTime
-                        ? event.target.value
-                        : to24Hour(event.target.value, displayedMeridiem)
+                      to24Hour(displayedTime.hour, event.target.value)
                     );
                     setSaveError('');
                   }}
                 >
-                  {Array.from(
-                    { length: use24HourTime ? 24 : 12 },
-                    (_, index) => {
-                      const hour = use24HourTime
-                        ? String(index).padStart(2, '0')
-                        : String(index + 1).padStart(2, '0');
-                      const hour24 = use24HourTime
-                        ? hour
-                        : to24Hour(hour, displayedMeridiem);
-                      const isInPast =
-                        isToday &&
-                        (hour24 < nextMinute.hour ||
-                          (hour24 === nextMinute.hour &&
-                            deadlineMinute < nextMinute.minute));
-                      return (
-                        <option key={hour} value={hour} disabled={isInPast}>
-                          {hour}
-                        </option>
-                      );
-                    }
-                  )}
-                </select>
-                <span className="task-deadline-separator" aria-hidden="true">
-                  :
-                </span>
-                <select
-                  id="task-deadline-minute"
-                  aria-label="Deadline minute"
-                  value={deadlineMinute}
-                  onChange={(event) => {
-                    setDeadlineMinute(event.target.value);
-                    setSaveError('');
-                  }}
-                >
-                  {Array.from({ length: 60 }, (_, minute) => {
-                    const value = String(minute).padStart(2, '0');
+                  {['AM', 'PM'].map((meridiem) => {
+                    const hour24 = to24Hour(displayedTime.hour, meridiem);
                     const isInPast =
                       isToday &&
-                      deadlineHour === nextMinute.hour &&
-                      value < nextMinute.minute;
+                      (hour24 < nextMinute.hour ||
+                        (hour24 === nextMinute.hour &&
+                          deadlineMinute < nextMinute.minute));
+
                     return (
-                      <option key={value} value={value} disabled={isInPast}>
-                        {value}
+                      <option
+                        key={meridiem}
+                        value={meridiem}
+                        disabled={isInPast}
+                      >
+                        {meridiem}
                       </option>
                     );
                   })}
                 </select>
-                {!use24HourTime && (
-                  <select
-                    aria-label="Deadline AM or PM"
-                    value={displayedMeridiem}
-                    onChange={(event) => {
-                      setDeadlineHour(
-                        to24Hour(displayedTime.hour, event.target.value)
-                      );
-                      setSaveError('');
-                    }}
-                  >
-                    {['AM', 'PM'].map((meridiem) => {
-                      const hour24 = to24Hour(displayedTime.hour, meridiem);
-                      const isInPast =
-                        isToday &&
-                        (hour24 < nextMinute.hour ||
-                          (hour24 === nextMinute.hour &&
-                            deadlineMinute < nextMinute.minute));
-                      return (
-                        <option
-                          key={meridiem}
-                          value={meridiem}
-                          disabled={isInPast}
-                        >
-                          {meridiem}
-                        </option>
-                      );
-                    })}
-                  </select>
-                )}
-              </div>
-              <div className="task-time-format-toggle">
-                <input
-                  id="task-time-format"
-                  type="checkbox"
-                  checked={use24HourTime}
-                  onChange={(event) => setUse24HourTime(event.target.checked)}
-                />
-                <label htmlFor="task-time-format">24-hour time</label>
-              </div>
+              )}
             </div>
-          )}
-          {saveError && (
-            <p className="task-details-error" role="alert">
-              {saveError}
-            </p>
-          )}
 
-          <label className="task-details-label" htmlFor="task-details-notes">
-            Notes
-          </label>
-          <textarea
-            className="task-details-textarea"
-            id="task-details-notes"
-            name="notes"
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-          />
-        </div>
-      </section>
-    </div>
+            <div className="task-time-format-toggle">
+              <input
+                id="task-time-format"
+                type="checkbox"
+                checked={use24HourTime}
+                onChange={(event) => setUse24HourTime(event.target.checked)}
+              />
+              <label htmlFor="task-time-format">24-hour time</label>
+            </div>
+          </div>
+        )}
+
+        {saveError && (
+          <p className="task-details-error" role="alert">
+            {saveError}
+          </p>
+        )}
+
+        <label className="task-details-label" htmlFor="task-details-notes">
+          Notes
+        </label>
+        <textarea
+          className="task-details-textarea"
+          id="task-details-notes"
+          name="notes"
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+        />
+      </div>
+    </dialog>
   );
 }
 

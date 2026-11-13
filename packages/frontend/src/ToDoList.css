@@ -1,5 +1,7 @@
 .main-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: 388px minmax(0, 1fr);
+  grid-template-areas: 'sidebar main';
   min-height: 100vh;
   background: #fffbf2;
 }
@@ -19,8 +21,7 @@ tr.drop-target td {
 }
 
 .sidebar {
-  width: 388px;
-  flex-shrink: 0;
+  grid-area: sidebar;
   background: #3a3042;
   border-radius: 0 30px 30px 0;
   padding: 40px 30px;
@@ -53,6 +54,10 @@ tr.drop-target td {
   cursor: pointer;
 }
 
+.lists-section summary:focus-visible {
+  text-decoration: underline;
+}
+
 .lists-section ul {
   margin: 0;
   padding: 0;
@@ -83,6 +88,10 @@ tr.drop-target td {
   border: none;
   outline: none;
   box-shadow: none;
+}
+
+.user-list-select:focus-visible {
+  text-decoration: underline;
 }
 
 .user-list-select:hover {
@@ -295,6 +304,12 @@ tr.drop-target td {
   box-shadow: none;
 }
 
+.add-list-button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+  text-decoration: underline;
+}
+
 .add-list-button:hover {
   background: #806e8e;
   color: #3a3042;
@@ -312,6 +327,7 @@ tr.drop-target td {
 }
 
 .main-content {
+  grid-area: main;
   flex: 1;
   padding: 60px;
   color: #3a3042;
@@ -340,14 +356,27 @@ tr.drop-target td {
   cursor: pointer;
   font: inherit;
   letter-spacing: inherit;
-  padding: 0;
+  padding: 4px;
   text-align: left;
+}
+
+.main-header-title-button:focus-visible {
+  outline: 3px solid #3a3042;
+  outline-offset: 2px;
+  text-decoration: underline;
 }
 
 .main-header-title input {
   color: inherit;
   font: inherit;
   letter-spacing: inherit;
+}
+
+.main-header-title input:focus-visible {
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-decoration: underline;
 }
 
 .header-underline {
@@ -387,6 +416,10 @@ tr.drop-target td {
 
 .task-panel input[type='text'] {
   color: #3a3042;
+}
+
+.task-panel input[type='text']:focus-visible {
+  text-decoration: underline;
 }
 
 .task-panel input[type='checkbox'] {
@@ -462,6 +495,16 @@ tr.drop-target td {
   border: none;
   outline: none;
   box-shadow: none;
+}
+
+.add-task-button:focus-visible {
+  background: #a16207;
+  color: #fff;
+  border: none;
+  box-shadow: 0 0 0 3px #a16207;
+  outline: 3px solid #3a3042;
+  text-decoration: underline;
+  outline-offset: 3px;
 }
 
 .add-task-button:hover {
@@ -547,6 +590,25 @@ tr.drop-target td {
   padding: 24px 50px 32px;
 }
 
+.move-task-body .user-list-select:focus-visible {
+  outline: 3px solid #3a3042;
+  outline-offset: 3px;
+  text-decoration: underline;
+}
+
+.task-details-cancel:focus {
+  color: #9e8eab;
+  outline: 3px solid #3a3042;
+  outline-offset: 3px;
+}
+
+.task-details-cancel:focus-visible {
+  color: #3a3042;
+  text-decoration: underline;
+  outline: 3px solid #3a3042;
+  outline-offset: 3px;
+}
+
 .move-task-empty {
   margin: 0;
   color: #9e8eab;
@@ -605,6 +667,16 @@ tr.drop-target td {
   color: #777676;
 }
 
+.archive-icon-button:focus-visible,
+.delete-icon-button:focus-visible,
+.edit-icon-button:focus-visible {
+  background-color: #594b65;
+  color: #fff;
+  box-shadow: 0 0 0 3px #594b65;
+  outline: 3px solid #3a3042;
+  outline-offset: 3px;
+}
+
 .archive-icon-button:active,
 .delete-icon-button:active,
 .edit-icon-button:active {
@@ -653,6 +725,12 @@ tr.drop-target td {
   transition: transform 0.15s ease;
 }
 
+.archived-section summary:focus-visible,
+.deleted-section summary:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 .archived-section[open] summary::before,
 .deleted-section[open] summary::before {
   transform: rotate(90deg);
@@ -674,6 +752,14 @@ tr.drop-target td {
   margin: 0;
   cursor: pointer;
   color: #ea3636;
+}
+
+.delete-list-icon-button:focus-visible {
+  background-color: #594b65;
+  color: #fff;
+  box-shadow: 0 0 0 3px #594b65;
+  outline: 3px solid #3a3042;
+  outline-offset: 3px;
 }
 
 .delete-list-icon-button svg {
@@ -766,6 +852,17 @@ tr.drop-target td {
   letter-spacing: 0.25px;
 }
 
+.task-details-cancel:focus {
+  color: #9e8eab;
+}
+
+.task-details-cancel:focus-visible {
+  color: #3a3042;
+  text-decoration: underline;
+  outline: 3px solid #9e8eab;
+  outline-offset: 3px;
+}
+
 .task-details-save {
   width: 104px;
   padding: 12px 30px;
@@ -773,11 +870,11 @@ tr.drop-target td {
   align-self: center;
 }
 
-.task-details-cancel:hover {
-  color: #806e8e;
+.task-details-cancel:active {
+  color: #3a3042;
 }
 
-.task-details-cancel:active {
+.task-details-cancel:hover {
   color: #3a3042;
 }
 
@@ -1029,8 +1126,16 @@ tr.drop-target td {
   border-color: #9e8eab;
   background: #fff;
   color: #3a3042;
-  outline: none;
   box-shadow: none;
+}
+
+.task-details-body .task-details-input:focus-visible,
+.task-details-body .task-details-textarea:focus-visible {
+  border-color: transparent;
+  outline: 3px solid #9a8aa7;
+  outline-offset: 3px;
+  box-shadow: none;
+  text-decoration: underline;
 }
 
 .popup {
@@ -1072,6 +1177,16 @@ search.search-bar {
   padding: 0;
 }
 
+.search-list-buttons button {
+  padding: 0;
+}
+
+.search-list-buttons button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 input.search-bar {
   color: #3a3042;
   border: 1px solid #555;
@@ -1080,4 +1195,48 @@ input.search-bar {
   background: transparent
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' class='bi bi-search' fill='%233A3042' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'%3E%3C/path%3E%3C/svg%3E")
     no-repeat 13px center;
+}
+
+.archive-list-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.archive-list-buttons button {
+  width: auto;
+  height: auto;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #594b65;
+  color: #fffbf2;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.archive-list-buttons button:hover {
+  background: #4b3f56;
+  color: #fffbf2;
+}
+
+.archive-list-buttons button:focus-visible {
+  background: #fffbf2;
+  color: #594b65;
+  outline: 3px solid #9a8aa7;
+  outline-offset: 0px;
+  text-decoration: underline;
+  box-shadow: none;
+}
+
+.list-dialog-actions button:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+#new-list-name:focus-visible {
+  text-decoration: underline;
 }

@@ -795,6 +795,48 @@ function MyApp() {
     }
   }
 
+  const createListDialogRef = useRef(null);
+  useEffect(() => {
+    const dialog = createListDialogRef.current;
+    if (!dialog) return;
+
+    if (isCreateListOpen && !dialog.open) {
+      if (typeof dialog.showModal === 'function') {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute('open', '');
+      }
+    } else if (!isCreateListOpen && dialog.open) {
+      if (typeof dialog.close === 'function') {
+        dialog.close();
+      } else {
+        dialog.removeAttribute('open');
+      }
+    }
+  }, [isCreateListOpen]);
+
+  const deleteListDialogRef = useRef(null);
+  useEffect(() => {
+    const dialog = deleteListDialogRef.current;
+    if (!dialog) return;
+
+    if (isDeleteListOpen && currentList) {
+      if (!dialog.open) {
+        if (typeof dialog.showModal === 'function') {
+          dialog.showModal();
+        } else {
+          dialog.setAttribute('open', '');
+        }
+      }
+    } else if (dialog.open) {
+      if (typeof dialog.close === 'function') {
+        dialog.close();
+      } else {
+        dialog.removeAttribute('open');
+      }
+    }
+  }, [isDeleteListOpen, currentList]);
+
   if (token === INVALID_TOKEN) {
     return (
       <Login
@@ -970,6 +1012,7 @@ function MyApp() {
           )}
         </main>
       </div>
+
       {popupMessage && (
         <div className="popup">
           <span>{popupMessage}</span>
@@ -987,6 +1030,7 @@ function MyApp() {
           )}
         </div>
       )}
+
       {isUpcomingSettingsOpen && (
         <div
           className="task-details-bg"
@@ -1065,92 +1109,101 @@ function MyApp() {
           </section>
         </div>
       )}
-      {isCreateListOpen && (
-        <div className="list-dialog-backdrop">
-          <section
-            className="list-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-list-title"
-          >
-            <h2 id="create-list-title">Create a list</h2>
-            <form onSubmit={createList}>
-              <label htmlFor="new-list-name">List name</label>
-              <input
-                autoFocus
-                id="new-list-name"
-                name="name"
-                type="text"
-                value={newListName}
-                onChange={(event) => setNewListName(event.target.value)}
-              />
-              {listCreateError && (
-                <p className="list-create-error" role="alert">
-                  {listCreateError}
-                </p>
-              )}
-              <div className="list-dialog-actions">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCreateListOpen(false);
-                    setNewListName('');
-                    setListCreateError('');
-                  }}
-                  disabled={isCreatingList}
-                >
-                  Cancel
-                </button>
-                <button type="submit" disabled={isCreatingList}>
-                  {isCreatingList ? 'Creating...' : 'Create'}
-                </button>
-              </div>
-            </form>
-          </section>
-        </div>
-      )}
-      {isDeleteListOpen && currentList && (
-        <div className="list-dialog-backdrop">
-          <section
-            className="list-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-list-title"
-          >
-            <h2 id="delete-list-title">Permanently delete list?</h2>
-            <p>
-              “{currentList.name}” and all its tasks will be permanently
-              deleted, including archived and deleted tasks. This action cannot
-              be undone.
+
+      <dialog
+        ref={createListDialogRef}
+        className="list-dialog"
+        aria-labelledby="create-list-title"
+        onCancel={(event) => {
+          event.preventDefault();
+          if (isCreatingList) return;
+
+          setIsCreateListOpen(false);
+          setNewListName('');
+          setListCreateError('');
+        }}
+      >
+        <h2 id="create-list-title">Create a list</h2>
+        <form onSubmit={createList}>
+          <label htmlFor="new-list-name">List name</label>
+          <input
+            autoFocus
+            id="new-list-name"
+            name="name"
+            type="text"
+            value={newListName}
+            onChange={(event) => setNewListName(event.target.value)}
+          />
+          {listCreateError && (
+            <p className="list-create-error" role="alert">
+              {listCreateError}
             </p>
-            {listDeleteError && (
-              <p className="list-create-error" role="alert">
-                {listDeleteError}
-              </p>
-            )}
-            <div className="list-dialog-actions">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsDeleteListOpen(false);
-                  setListDeleteError('');
-                }}
-                disabled={isDeletingList}
-              >
-                Cancel
-              </button>
-              <button
-                className="confirm-delete-list-button"
-                type="button"
-                onClick={deleteCurrentList}
-                disabled={isDeletingList}
-              >
-                {isDeletingList ? 'Deleting...' : 'Permanently Delete'}
-              </button>
-            </div>
-          </section>
+          )}
+          <div className="list-dialog-actions">
+            <button
+              type="button"
+              onClick={() => {
+                setIsCreateListOpen(false);
+                setNewListName('');
+                setListCreateError('');
+              }}
+              disabled={isCreatingList}
+            >
+              Cancel
+            </button>
+            <button type="submit" disabled={isCreatingList}>
+              {isCreatingList ? 'Creating...' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog
+        ref={deleteListDialogRef}
+        className="list-dialog"
+        aria-labelledby="delete-list-title"
+        aria-describedby="delete-list-description"
+        onCancel={(event) => {
+          event.preventDefault();
+          if (isDeletingList) return;
+
+          setIsDeleteListOpen(false);
+          setListDeleteError('');
+        }}
+      >
+        <h2 id="delete-list-title">Permanently delete list?</h2>
+        <p id="delete-list-description">
+          “{currentList?.name}” and all its tasks will be permanently deleted,
+          including archived and deleted tasks. This action cannot be undone.
+        </p>
+        {listDeleteError && (
+          <p className="list-create-error" role="alert">
+            {listDeleteError}
+          </p>
+        )}
+        <div className="list-dialog-actions">
+          <button
+            autoFocus
+            type="button"
+            onClick={() => {
+              setIsDeleteListOpen(false);
+              setListDeleteError('');
+            }}
+            disabled={isDeletingList}
+          >
+            Cancel
+          </button>
+          <button
+            className="confirm-delete-list-button"
+            type="button"
+            onClick={deleteCurrentList}
+            disabled={isDeletingList}
+          >
+            {isDeletingList ? 'Deleting...' : 'Permanently Delete'}
+          </button>
         </div>
-      )}
+      </dialog>
+
       {taskDetails && (
         <TaskDetails
           key={`${taskDetails._id}-${taskDetails.deadline ?? ''}`}

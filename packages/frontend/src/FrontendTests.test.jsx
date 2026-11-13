@@ -166,6 +166,22 @@ afterAll(() => {
   vi.unstubAllGlobals();
 });
 
+// Test for open/closed dialog.
+if (typeof HTMLDialogElement.prototype.showModal !== 'function') {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '');
+  };
+}
+
+if (typeof HTMLDialogElement.prototype.close !== 'function') {
+  HTMLDialogElement.prototype.close = function () {
+    if (!this.open) return;
+
+    this.removeAttribute('open');
+    this.dispatchEvent(new Event('close'));
+  };
+}
+
 //Tests
 //Rendering
 describe('rendering', () => {
@@ -1617,7 +1633,9 @@ describe('list dialog workflows', () => {
     );
     await openApp();
 
-    await user.click(screen.getAllByRole('button', { name: 'School' })[1]);
+    await user.click(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    );
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
     await user.clear(renameInput);
     fireEvent.blur(renameInput);
@@ -1640,7 +1658,9 @@ describe('list dialog workflows', () => {
     );
     await openApp();
 
-    await user.click(screen.getAllByRole('button', { name: 'School' })[1]);
+    await user.click(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    );
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
     await user.clear(renameInput);
     await user.type(renameInput, renamedList.name);
@@ -1653,6 +1673,154 @@ describe('list dialog workflows', () => {
       )
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
+  });
+  it('closes the create dialog through cancel and clears its input', async () => {
+    const user = userEvent.setup();
+    installApi();
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: '+ Add List' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a list' });
+    await user.type(
+      within(dialog).getByRole('textbox', { name: 'List name' }),
+      'Temporary list'
+    );
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(
+      screen.queryByRole('dialog', { name: 'Create a list' })
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '+ Add List' }));
+    expect(screen.getByRole('textbox', { name: 'List name' })).toHaveValue('');
+  });
+
+  it('closes the delete dialog through cancel without deleting the list', async () => {
+    const user = userEvent.setup();
+    installApi();
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: 'Delete List' }));
+    const dialog = screen.getByRole('dialog', {
+      name: 'Permanently delete list?',
+    });
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(
+      screen.queryByRole('dialog', { name: 'Permanently delete list?' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    ).toBeInTheDocument();
+  });
+  it('keeps the create dialog open when cancelled while creating', async () => {
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const { routes } = installApi({ lists: [list, secondList] });
+
+    let finishRequest;
+    routes.set('POST http://localhost:8000/lists', async () => {
+      await new Promise((resolve) => {
+        finishRequest = resolve;
+      });
+      return jsonResponse({}, 500);
+    });
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: '+ Add List' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a list' });
+    await user.type(
+      within(dialog).getByRole('textbox', { name: 'List name' }),
+      'New list'
+    );
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
+
+    expect(
+      within(dialog).getByRole('button', { name: 'Creating...' })
+    ).toBeDisabled();
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(dialog).toHaveAttribute('open');
+    expect(
+      within(dialog).getByRole('textbox', { name: 'List name' })
+    ).toHaveValue('New list');
+
+    finishRequest();
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+  });
+  it('keeps the delete dialog open when cancelled while deleting', async () => {
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const { routes } = installApi({ lists: [list, secondList] });
+
+    let finishRequest;
+    routes.set('DELETE http://localhost:8000/lists/list-1', async () => {
+      await new Promise((resolve) => {
+        finishRequest = resolve;
+      });
+      return jsonResponse({}, 500);
+    });
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: 'Delete List' }));
+    const dialog = screen.getByRole('dialog', {
+      name: 'Permanently delete list?',
+    });
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Permanently Delete' })
+    );
+
+    expect(
+      within(dialog).getByRole('button', { name: 'Deleting...' })
+    ).toBeDisabled();
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(dialog).toHaveAttribute('open');
+
+    finishRequest();
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+  });
+  it('keeps the delete dialog open when the list name updates', async () => {
+    // the test below is to test skipping opening dialog, where dialog is true and !dialog is false
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const renamedList = { ...list, name: 'Classes' };
+    const { routes } = installApi({ lists: [list, secondList] });
+    routes.set('PUT http://localhost:8000/lists/list-1', async () =>
+      jsonResponse(renamedList)
+    );
+    await openApp();
+
+    await user.click(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    );
+    const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
+    await user.clear(renameInput);
+    await user.type(renameInput, 'Classes');
+
+    fireEvent.blur(renameInput);
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete List' })
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Permanently delete list?',
+    });
+
+    expect(await within(dialog).findByText(/Classes/)).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('open');
   });
 });
 
@@ -2110,6 +2278,28 @@ describe('TaskDetails component', () => {
       name: 'Read chapter',
       notes: 'Pages 1-10',
     });
+  });
+  it('closes task details with cancel', () => {
+    const closeTaskDetails = vi.fn();
+    const saveTaskDetails = vi.fn();
+
+    render(
+      <TaskDetails
+        task={{ _id: 'task-1', name: 'Study', notes: '' }}
+        closeTaskDetails={closeTaskDetails}
+        saveTaskDetails={saveTaskDetails}
+      />
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Task details' });
+    const cancelEvent = new Event('cancel', { cancelable: true });
+
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(dialog).not.toHaveAttribute('open');
+    expect(closeTaskDetails).toHaveBeenCalledTimes(1);
+    expect(saveTaskDetails).not.toHaveBeenCalled();
   });
 });
 
@@ -3219,25 +3409,6 @@ describe('taskDetails', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
   //
-  it('closes the popup when bg is clicked', async () => {
-    const user = userEvent.setup();
-    const popup = await OpenTaskDetails(user);
-
-    await user.click(popup.parentElement);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('keeps popup open when clicking inside it', async () => {
-    const user = userEvent.setup();
-    const popup = await OpenTaskDetails(user);
-
-    await user.click(
-      within(popup).getByRole('heading', { name: 'Task details' })
-    );
-    expect(
-      screen.queryByRole('dialog', { name: 'Task details' })
-    ).toBeInTheDocument();
-  });
 
   it('updates the task after successfully saving its details', async () => {
     const user = userEvent.setup();
@@ -5362,6 +5533,17 @@ describe('bulk moving', () => {
       name: 'Choose a list to move task(s) to',
     });
 
+    dialog.removeAttribute('open');
+    fireEvent(dialog, new Event('close'));
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Choose a list to move task(s) to' })
+    ).not.toBeInTheDocument();
+
+    await user.click(moveButton);
+
+    expect(dialog).toHaveAttribute('open');
+
     await user.click(
       within(dialog).getByRole('button', { name: 'Other Stuff' })
     );
@@ -5683,71 +5865,6 @@ describe('bulk moving', () => {
     expect(
       screen.getByRole('cell', { name: 'Do a backflip' })
     ).toBeInTheDocument();
-
-    // Verify the backend request
-    expect(fetch).not.toHaveBeenCalledWith(
-      expect.stringMatching(/\/move$/),
-      expect.objectContaining({ method: 'PATCH' })
-    );
-  });
-
-  it('closes when the backdrop is clicked', async () => {
-    const user = userEvent.setup();
-
-    vi.mocked(fetch).mockImplementation((url, options = {}) => {
-      if (url === 'http://localhost:8000/lists' && !options.method) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () =>
-            Promise.resolve([
-              { _id: 'list-123', name: 'Cool Stuff' },
-              { _id: 'list-456', name: 'Other Stuff' },
-            ]),
-        });
-      }
-
-      if (url === 'http://localhost:8000/tasks' && !options.method) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () =>
-            Promise.resolve([
-              {
-                _id: 'task-123',
-                name: 'Do a backflip',
-                listId: 'list-123',
-              },
-            ]),
-        });
-      }
-
-      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
-    });
-
-    render(<MyApp />);
-    // Validate that tasks exist.
-    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
-
-    // Find the checkboxes assosciated with each task.
-    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
-
-    await user.click(taskOneCheckbox);
-    await user.click(
-      screen.getByRole('button', { name: 'Move Task To A Different List' })
-    );
-
-    const dialog = screen.getByRole('dialog', {
-      name: 'Choose a list to move task(s) to',
-    });
-
-    await user.click(dialog.parentElement);
-
-    expect(
-      screen.queryByRole('dialog', { name: 'Choose a list to move task(s) to' })
-    ).not.toBeInTheDocument();
-    expect(taskOneCheckbox).toBeChecked();
-    expect(screen.getByText('1 selected')).toBeInTheDocument();
 
     // Verify the backend request
     expect(fetch).not.toHaveBeenCalledWith(
