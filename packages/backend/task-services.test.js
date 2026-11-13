@@ -50,6 +50,11 @@ describe('Task timestamps', () => {
     expect(Task.schema.path('createdAt').instance).toBe('Date');
     expect(Task.schema.path('updatedAt').instance).toBe('Date');
   });
+
+  it('defines an optional deadline date field', () => {
+    expect(Task.schema.path('deadline').instance).toBe('Date');
+    expect(Task.schema.path('deadline').defaultValue).toBeNull();
+  });
 });
 
 describe('reorderTasks', () => {
