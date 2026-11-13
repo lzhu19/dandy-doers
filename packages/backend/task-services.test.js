@@ -277,6 +277,17 @@ describe('updateTask', () => {
     expect(task._id.toString()).toBe(taskId);
   });
 
+  it('updates and returns the task tags', async () => {
+    const updatedTask = { ...sampleTask, tags: ['school', 'urgent'] };
+
+    mockingoose(Task).toReturn(sampleTask, 'findOne');
+    mockingoose(Task).toReturn(updatedTask, 'save');
+
+    const task = await updateTask(taskId, { tags: ['school', 'urgent'] });
+
+    expect(Array.from(task.tags)).toEqual(['school', 'urgent']);
+  });
+
   it('returns null when no task matches the given ID', async () => {
     mockingoose(Task).toReturn(null, 'findOne');
 
@@ -642,5 +653,15 @@ describe('updateTaskListId', () => {
     await expect(updateTaskListId(taskId, destinationListId)).rejects.toThrow(
       'Update lookup failed'
     );
+  });
+});
+
+describe('cleanTags', () => {
+  it('trims, removes duplicates and other rand junk, and enforces limits', () => {
+    expect(
+      cleanTags([' school ', 'School', '', 42, null, 'a'.repeat(30)])
+    ).toEqual(['school', 'a'.repeat(20)]);
+    expect(cleanTags(['1', '2', '3', '4', '5', '6'])).toHaveLength(5);
+    expect(cleanTags(['not an array'])).toEqual([]);
   });
 });

@@ -778,3 +778,124 @@ input.search-bar {
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' class='bi bi-search' fill='%233A3042' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'%3E%3C/path%3E%3C/svg%3E")
     no-repeat 13px center;
 }
+
+/* Tags */
+
+.task-details-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-pill,
+.add-tag-button,
+.add-tag-button:hover,
+.add-tag-button:focus,
+.add-tag-button:active {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.tag-pill {
+  border: 1.5px solid transparent;
+  padding-right: 12px;
+  color: #3a3042;
+}
+
+.add-tag-button,
+.add-tag-button:hover,
+.add-tag-button:focus,
+.add-tag-button:active {
+  margin: 0;
+  border: 1.5px dashed #9e8eab;
+  background: transparent;
+  color: #594b65;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.tag-remove-button,
+.tag-remove-button:hover,
+.tag-remove-button:focus,
+.tag-remove-button:active {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #3a3042;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.task-details-body .tag-input {
+  box-sizing: border-box;
+  width: 150px;
+  height: 36px;
+  margin: 0;
+  padding: 0 20px;
+  border: 1.5px solid #9e8eab;
+  border-radius: 999px;
+  background: #fffbf2;
+  color: #3a3042;
+  font-size: 14px;
+}
+
+.tag-color-0 {
+  background: #ffdf8c;
+}
+.tag-color-1 {
+  background: #e4dcec;
+}
+.tag-color-2 {
+  background: #cfe8d5;
+}
+.tag-color-3 {
+  background: #f7d3c4;
+}
+.tag-color-4 {
+  background: #cfe2f3;
+}
+.tag-color-5 {
+  background: #f3d0e0;
+}
+
+.tag-remove-button:hover,
+.tag-remove-button:focus-visible {
+  background: rgba(58, 48, 66, 0.15);
+}
+
+.add-tag-button:hover {
+  border-color: #806e8e;
+  background: #fffbf2;
+}
+
+.add-tag-button:focus-visible {
+  outline: 2px solid #806e8e;
+  outline-offset: 2px;
+}
+
+.task-details-body .tag-input:focus {
+  outline: none;
+  border-color: #806e8e;
+}
+
+.task-details-body .tag-input::placeholder {
+  color: #9e8eab;
+}

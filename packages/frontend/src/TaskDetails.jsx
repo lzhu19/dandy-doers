@@ -1,13 +1,44 @@
 import { useState } from 'react';
+import TagPill from './TagPill';
 
 function TaskDetails(props) {
   //start w/ clicked task's current vals
   const [name, setName] = useState(props.task.name);
   const [notes, setNotes] = useState(props.task.notes ?? '');
+  const [tags, setTags] = useState(props.task.tags ?? []);
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [tagInput, setTagInput] = useState('');
 
   function handleSave() {
     if (!name.trim()) return;
-    props.saveTaskDetails(props.task._id, { name, notes });
+    props.saveTaskDetails(props.task._id, { name, notes, tags });
+  }
+
+  //adds typed tag (if valid), then closes input
+  function addTag() {
+    const newTag = tagInput.trim().slice(0, 20);
+    const isDuplicate = tags.some(
+      (tag) => tag.toLowerCase() === newTag.toLowerCase()
+    );
+    if (newTag && !isDuplicate && tags.length < 5) {
+      setTags([...tags, newTag]);
+    }
+    setTagInput('');
+    setIsAddingTag(false);
+  }
+
+  function handleTagKeyDown(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addTag();
+    } else if (event.key === 'Escape') {
+      event.stopPropagation();
+      setIsAddingTag(false);
+    }
+  }
+
+  function removeTag(tagToRemove) {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   }
 
   return (
@@ -70,6 +101,43 @@ function TaskDetails(props) {
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
           />
+
+          <span className="task-details-label">Tags</span>
+          <div className="task-details-tags">
+            {tags.map((tag, index) => (
+              <TagPill
+                key={tag}
+                tag={tag}
+                colorIndex={index}
+                onRemove={() => removeTag(tag)}
+              />
+            ))}
+
+            {isAddingTag ? (
+              <input
+                className="tag-input"
+                type="text"
+                aria-label="New tag"
+                placeholder="Tag name"
+                maxLength={20}
+                autoFocus
+                value={tagInput}
+                onChange={(event) => setTagInput(event.target.value)}
+                onKeyDown={handleTagKeyDown}
+                onBlur={addTag}
+              />
+            ) : (
+              tags.length < 5 && (
+                <button
+                  className="add-tag-button"
+                  type="button"
+                  onClick={() => setIsAddingTag(true)}
+                >
+                  + Add tag
+                </button>
+              )
+            )}
+          </div>
         </div>
       </section>
     </div>
