@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import DeadlineCountdown from './DeadlineCountdown';
 
 function TableHeader(props) {
   const selectAll = props.taskData.every((row) =>
@@ -232,6 +233,11 @@ function TableBody(props) {
               return row.name;
             }
           })()}
+          <DeadlineCountdown
+            deadline={row.deadline}
+            className="task-deadline-countdown task-deadline-countdown-list"
+            onExpire={() => props.clearExpiredDeadline?.(row._id, row.deadline)}
+          />
         </td>
 
         <td className="task-actions-cell">
@@ -330,6 +336,7 @@ function Table(props) {
           archiveTask={props.archiveTask}
           //deleteTask={props.deleteTask}
           updateTask={props.updateTask}
+          clearExpiredDeadline={props.clearExpiredDeadline}
           selectedTaskId={props.selectedTaskId}
           setSelectedTaskId={props.setSelectedTaskId}
           editingId={props.editingId}

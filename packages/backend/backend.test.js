@@ -8,6 +8,7 @@ jest.unstable_mockModule('./task-services.js', () => ({
   findTaskById: jest.fn(),
   addTask: jest.fn(),
   updateTask: jest.fn(),
+  updateDeadline: jest.fn(),
   reorderTasks: jest.fn(),
   deleteTask: jest.fn(),
   permanentlyDeleteTask: jest.fn(),
@@ -43,6 +44,7 @@ const {
   deleteTask,
   permanentlyDeleteTask,
   updateTask,
+  updateDeadline,
   reorderTasks,
   archiveTask,
   restoreArchivedTask,
@@ -397,6 +399,82 @@ describe('PUT /tasks/:id', () => {
       error,
       'Could not update task name: ',
       'Could not update task name.'
+    );
+  });
+});
+
+describe('PUT /tasks/:id/deadline', () => {
+  it('updates and returns a task deadline', async () => {
+    const deadline = '2027-01-15T12:30:00.000Z';
+    const updatedTask = { _id: 'task-1', deadline };
+    updateDeadline.mockResolvedValueOnce(updatedTask);
+
+    const response = await request(app)
+      .put('/tasks/task-1/deadline')
+      .send({ deadline });
+
+    expect(updateDeadline).toHaveBeenCalledWith('task-1', new Date(deadline));
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(updatedTask);
+  });
+
+  it('allows clearing a task deadline', async () => {
+    updateDeadline.mockResolvedValueOnce({ _id: 'task-1', deadline: null });
+
+    const response = await request(app)
+      .put('/tasks/task-1/deadline')
+      .send({ deadline: null });
+
+    expect(updateDeadline).toHaveBeenCalledWith('task-1', null);
+    expect(response.status).toBe(200);
+    expect(response.body.deadline).toBeNull();
+  });
+
+  it('rejects invalid and past deadlines', async () => {
+    const nonStringResponse = await request(app)
+      .put('/tasks/task-1/deadline')
+      .send({ deadline: 12345 });
+    const invalidResponse = await request(app)
+      .put('/tasks/task-1/deadline')
+      .send({ deadline: 'not-a-date' });
+    const pastResponse = await request(app)
+      .put('/tasks/task-1/deadline')
+      .send({ deadline: '2000-01-01T00:00:00.000Z' });
+
+    expect(nonStringResponse.status).toBe(400);
+    expect(nonStringResponse.text).toBe(
+      'A valid deadline timestamp is required.'
+    );
+    expect(invalidResponse.status).toBe(400);
+    expect(invalidResponse.text).toBe(
+      'A valid deadline timestamp is required.'
+    );
+    expect(pastResponse.status).toBe(400);
+    expect(pastResponse.text).toBe('The deadline must be in the future.');
+    expect(updateDeadline).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when the task is not found', async () => {
+    updateDeadline.mockResolvedValueOnce(null);
+
+    const response = await request(app)
+      .put('/tasks/missing-task/deadline')
+      .send({ deadline: '2027-01-15T12:30:00.000Z' });
+
+    expect(response.status).toBe(404);
+    expect(response.text).toBe('Task not found. Cannot update.');
+  });
+
+  it('logs service errors and responds with a generic 500 error', async () => {
+    const error = new Error('Database unavailable');
+    updateDeadline.mockRejectedValueOnce(error);
+    await expectLoggedServerError(
+      request(app)
+        .put('/tasks/task-1/deadline')
+        .send({ deadline: '2027-01-15T12:30:00.000Z' }),
+      error,
+      'Could not update task deadline: ',
+      'Could not update task deadline.'
     );
   });
 });
