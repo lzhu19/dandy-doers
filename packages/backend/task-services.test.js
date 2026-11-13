@@ -9,6 +9,7 @@ import {
   addTask,
   reorderTasks,
   updateTask,
+  updateDeadline,
   deleteTask,
   permanentlyDeleteTask,
   archiveTask,
@@ -307,6 +308,40 @@ describe('updateTask', () => {
     await expect(
       updateTask(taskId, { name: 'Updated task name' })
     ).rejects.toThrow('Update lookup failed');
+  });
+});
+
+describe('updateDeadline', () => {
+  it('updates and returns the task deadline', async () => {
+    const deadline = new Date('2027-01-15T12:30:00.000Z');
+    const updatedTask = { ...sampleTask, deadline };
+    mockingoose(Task).toReturn(sampleTask, 'findOne');
+    mockingoose(Task).toReturn(updatedTask, 'save');
+
+    const task = await updateDeadline(taskId, deadline);
+
+    expect(task.deadline).toEqual(deadline);
+    expect(task._id.toString()).toBe(taskId);
+  });
+
+  it('returns null when the task does not exist', async () => {
+    mockingoose(Task).toReturn(null, 'findOne');
+
+    await expect(updateDeadline(taskId, null)).resolves.toBeNull();
+  });
+
+  it('propagates errors while looking up or saving the task', async () => {
+    mockingoose(Task).toReturn(new Error('Deadline lookup failed'), 'findOne');
+    await expect(updateDeadline(taskId, null)).rejects.toThrow(
+      'Deadline lookup failed'
+    );
+
+    mockingoose(Task).reset();
+    mockingoose(Task).toReturn(sampleTask, 'findOne');
+    mockingoose(Task).toReturn(new Error('Deadline save failed'), 'save');
+    await expect(updateDeadline(taskId, null)).rejects.toThrow(
+      'Deadline save failed'
+    );
   });
 });
 

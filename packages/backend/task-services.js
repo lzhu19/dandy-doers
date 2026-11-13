@@ -79,6 +79,14 @@ function updateTask(id, updatedFields) {
   });
 }
 
+function updateDeadline(id, deadline) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.deadline = deadline;
+    return task.save();
+  });
+}
+
 function archiveTask(id) {
   return taskModel.findById(id).then((task) => {
     if (!task) return null;
@@ -138,6 +146,7 @@ export {
   findTaskByName,
   addTask,
   updateTask,
+  updateDeadline,
   deleteTask,
   permanentlyDeleteTask,
   archiveTask,
