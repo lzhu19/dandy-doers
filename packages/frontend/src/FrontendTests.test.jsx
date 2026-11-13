@@ -1574,7 +1574,9 @@ describe('list dialog workflows', () => {
     await user.type(renameInput, 'Classes');
 
     fireEvent.blur(renameInput);
-    fireEvent.click(screen.getByRole('button', { name: 'Delete List' }));
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete List' })
+    );
 
     const dialog = screen.getByRole('dialog', {
       name: 'Permanently delete list?',
