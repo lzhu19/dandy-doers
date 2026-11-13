@@ -347,15 +347,23 @@ describe('updateDeadline', () => {
 
 describe('deleteTask', () => {
   it('marks the task as deleted and returns it', async () => {
+    const taskWithDeadline = {
+      ...sampleTask,
+      deadline: new Date('2027-01-15T12:30:00.000Z'),
+    };
     mockingoose(Task).toReturn((query) => {
       expect(query.getQuery()._id.toString()).toBe(taskId);
-      return sampleTask;
+      return taskWithDeadline;
     }, 'findOne');
-    mockingoose(Task).toReturn(sampleDeletedTask, 'save');
+    mockingoose(Task).toReturn(
+      { ...taskWithDeadline, deleted: true, deadline: null },
+      'save'
+    );
 
     const task = await deleteTask(taskId);
 
     expect(task.deleted).toBe(true);
+    expect(task.deadline).toBeNull();
     expect(task.name).toBe(taskName);
     expect(task._id.toString()).toBe(taskId);
   });
@@ -452,12 +460,20 @@ describe('permanentlyDeleteTask', () => {
 
 describe('archiveTask', () => {
   it('marks the task as archived and returns it', async () => {
-    mockingoose(Task).toReturn(sampleTask, 'findOne');
-    mockingoose(Task).toReturn(sampleArchivedTask, 'save');
+    const taskWithDeadline = {
+      ...sampleTask,
+      deadline: new Date('2027-01-15T12:30:00.000Z'),
+    };
+    mockingoose(Task).toReturn(taskWithDeadline, 'findOne');
+    mockingoose(Task).toReturn(
+      { ...taskWithDeadline, archived: true, deadline: null },
+      'save'
+    );
 
     const task = await archiveTask(taskId);
 
     expect(task.archived).toBe(true);
+    expect(task.deadline).toBeNull();
     expect(task._id.toString()).toBe(taskId);
     expect(String(task.listId)).toBe(listId);
   });

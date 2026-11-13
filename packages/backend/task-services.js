@@ -91,6 +91,7 @@ function archiveTask(id) {
   return taskModel.findById(id).then((task) => {
     if (!task) return null;
     task.archived = true;
+    task.deadline = null;
     return task.save();
   });
 }
@@ -99,6 +100,7 @@ function deleteTask(id) {
   return taskModel.findById(id).then((task) => {
     if (!task) return null;
     task.deleted = true;
+    task.deadline = null;
     return task.save();
   });
 }
