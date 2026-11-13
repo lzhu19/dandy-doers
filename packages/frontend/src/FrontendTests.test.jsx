@@ -1682,6 +1682,43 @@ describe('TaskDetails component', () => {
     );
   });
 
+  it('rechecks the deadline when saving if the popup has remained open', () => {
+    vi.useFakeTimers();
+    try {
+      const now = new Date(2027, 0, 15, 10, 0, 0);
+      vi.setSystemTime(now);
+      const saveTaskDetails = vi.fn();
+      render(
+        <TaskDetails
+          task={activeTask}
+          saveTaskDetails={saveTaskDetails}
+          closeTaskDetails={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Set deadline?' }));
+      fireEvent.change(screen.getByLabelText('Date Due'), {
+        target: { value: '2027-01-15' },
+      });
+      fireEvent.change(screen.getByLabelText('Deadline hour'), {
+        target: { value: '10' },
+      });
+      fireEvent.change(screen.getByLabelText('Deadline minute'), {
+        target: { value: '01' },
+      });
+
+      vi.setSystemTime(new Date(2027, 0, 15, 10, 2, 0));
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+      expect(saveTaskDetails).not.toHaveBeenCalled();
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Choose a valid future deadline.'
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('saves an enabled deadline as a timestamp', async () => {
     const user = userEvent.setup();
     const saveTaskDetails = vi.fn().mockResolvedValue(undefined);

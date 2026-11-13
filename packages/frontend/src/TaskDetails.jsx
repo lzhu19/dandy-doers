@@ -68,7 +68,12 @@ function TaskDetails(props) {
 
   async function handleSave() {
     if (!name.trim()) return;
-    if (hasDeadline && deadlineIsInPast) {
+    if (
+      hasDeadline &&
+      (deadlineIsInPast ||
+        !selectedDeadline ||
+        selectedDeadline.getTime() <= Date.now())
+    ) {
       setSaveError('Choose a valid future deadline.');
       return;
     }
