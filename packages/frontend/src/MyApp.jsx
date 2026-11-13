@@ -655,27 +655,45 @@ function MyApp() {
   const createListDialogRef = useRef(null);
   useEffect(() => {
     const dialog = createListDialogRef.current;
-    if (!dialog) return; 
+    if (!dialog) return;
 
     if (isCreateListOpen && !dialog.open) {
-      dialog.showModal();
+      if (typeof dialog.showModal === 'function') {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute('open', '');
+      }
     } else if (!isCreateListOpen && dialog.open) {
-      dialog.close();
+      if (typeof dialog.close === 'function') {
+        dialog.close();
+      } else {
+        dialog.removeAttribute('open');
+      }
     }
   }, [isCreateListOpen]);
 
   const deleteListDialogRef = useRef(null);
   useEffect(() => {
     const dialog = deleteListDialogRef.current;
-    if (!dialog) return; 
+    if (!dialog) return;
 
     if (isDeleteListOpen && currentList) {
-      if (!dialog.open) dialog.showModal();
+      if (!dialog.open) {
+        if (typeof dialog.showModal === 'function') {
+          dialog.showModal();
+        } else {
+          dialog.setAttribute('open', '');
+        }
+      }
     } else if (dialog.open) {
-      dialog.close();
+      if (typeof dialog.close === 'function') {
+        dialog.close();
+      } else {
+        dialog.removeAttribute('open');
+      }
     }
   }, [isDeleteListOpen, currentList]);
-  
+
   if (token === INVALID_TOKEN) {
     return (
       <Login
