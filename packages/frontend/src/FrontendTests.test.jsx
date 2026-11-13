@@ -2,6 +2,7 @@
 import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
 import {
+  act,
   render,
   screen,
   waitFor,
@@ -23,6 +24,7 @@ import ArchiveList from './ArchiveList';
 import DeleteList from './DeleteList';
 import Table from './Table';
 import TaskDetails from './TaskDetails';
+import DeadlineCountdown from './DeadlineCountdown';
 
 const list = { _id: 'list-1', name: 'School' };
 const activeTask = {
@@ -1602,6 +1604,63 @@ describe('Table interactions', () => {
 });
 
 describe('TaskDetails component', () => {
+  it('updates the due countdown and calls expiry handling', () => {
+    vi.useFakeTimers();
+    try {
+      const now = new Date(2027, 0, 15, 10, 0, 0);
+      vi.setSystemTime(now);
+      const onExpire = vi.fn();
+      const deadline = new Date(now.getTime() + 60_000).toISOString();
+      const { getByText } = render(
+        <DeadlineCountdown
+          deadline={deadline}
+          onExpire={onExpire}
+          className="countdown"
+        />
+      );
+
+      expect(
+        getByText('Due in 0 days, 0 hours, and 1 minute')
+      ).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+
+      expect(onExpire).toHaveBeenCalledWith(deadline);
+      expect(
+        getByText('Due in 0 days, 0 hours, and 0 minutes')
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('unchecks the deadline and hides its controls when the task deadline clears', () => {
+    const props = {
+      task: { ...activeTask, deadline: '2027-01-15T12:30:00.000Z' },
+      saveTaskDetails: vi.fn(),
+      clearExpiredDeadline: vi.fn(),
+      closeTaskDetails: vi.fn(),
+    };
+    const { rerender } = render(<TaskDetails {...props} />);
+    expect(
+      screen.getByRole('checkbox', { name: 'Set deadline?' })
+    ).toBeChecked();
+
+    rerender(
+      <TaskDetails
+        key="task-1-cleared"
+        {...props}
+        task={{ ...props.task, deadline: null }}
+      />
+    );
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Set deadline?' })
+    ).not.toBeChecked();
+    expect(screen.queryByLabelText('Date Due')).not.toBeInTheDocument();
+  });
+
   it('shows deadline date and time controls when enabled', async () => {
     const user = userEvent.setup();
     render(
@@ -2990,6 +3049,36 @@ describe('taskDetails', () => {
         }),
       })
     );
+  });
+
+  it('clears an expired deadline and unchecks it in the details popup', async () => {
+    const user = userEvent.setup();
+    const expiredTask = {
+      ...activeTask,
+      deadline: '2000-01-01T00:00:00.000Z',
+    };
+    const { routes, fetchMock } = installApi({ tasks: [expiredTask] });
+    routes.set('PUT http://localhost:8000/tasks/task-1/deadline', async () =>
+      jsonResponse({ ...expiredTask, deadline: null })
+    );
+
+    await openApp();
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost:8000/tasks/task-1/deadline',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({ deadline: null }),
+        })
+      );
+    });
+    await user.click(screen.getByRole('button', { name: 'Open task details' }));
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Set deadline?' })
+    ).not.toBeChecked();
+    expect(screen.queryByLabelText('Date Due')).not.toBeInTheDocument();
   });
 
   it('saves the deadline through the deadline endpoint', async () => {

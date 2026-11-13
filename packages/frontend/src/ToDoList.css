@@ -668,6 +668,21 @@ tr.drop-target td {
   font-size: 0.8em;
 }
 
+.task-deadline-countdown {
+  display: block;
+  color: #888;
+  font-size: 0.8em;
+}
+
+.task-deadline-countdown-list {
+  margin-top: 4px;
+  text-align: right;
+}
+
+.task-deadline-countdown-popup {
+  margin: -24px 0 28px;
+}
+
 .task-deadline-toggle {
   display: flex;
   align-items: center;

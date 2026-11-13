@@ -30,6 +30,7 @@ function MyApp() {
 
   //starts as null then wehn user clicks the edit icon set taskDetailsId to the task's id
   const [taskDetailsId, setTaskDetailsId] = useState(null);
+  const expiredDeadlineRequests = useRef(new Set());
 
   const [archivedTasks, setArchivedTasks] = useState([]);
 
@@ -483,6 +484,41 @@ function MyApp() {
     }
   }
 
+  async function clearExpiredDeadline(id, expiredDeadline) {
+    if (expiredDeadlineRequests.current.has(id)) return;
+    expiredDeadlineRequests.current.add(id);
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/tasks/${id}/deadline`,
+        {
+          method: 'PUT',
+          headers: addAuthHeader({
+            'Content-Type': 'application/json',
+          }),
+          body: JSON.stringify({ deadline: null }),
+        }
+      );
+      if (response.status !== 200) {
+        throw new Error(
+          `Unable to clear expired task deadline (${response.status}).`
+        );
+      }
+
+      setTasks((currentTasks) =>
+        currentTasks.map((task) =>
+          task._id === id && task.deadline === expiredDeadline
+            ? { ...task, deadline: null }
+            : task
+        )
+      );
+    } catch (error) {
+      console.error('Could not clear expired task deadline:', error);
+    } finally {
+      expiredDeadlineRequests.current.delete(id);
+    }
+  }
+
   async function updateListName(id, newEdit) {
     const name = newEdit.trim();
     if (!name) {
@@ -781,6 +817,7 @@ function MyApp() {
                     isMoveTaskOpen={isMoveTaskOpen}
                     setIsMoveTaskOpen={setIsMoveTaskOpen}
                     taskData={currentTasks}
+                    clearExpiredDeadline={clearExpiredDeadline}
                     reorderTasks={reorderTasks}
                     removeTask={deleteTask}
                     updateTask={updateOneTask}
@@ -919,8 +956,10 @@ function MyApp() {
       )}
       {taskDetails && (
         <TaskDetails
+          key={`${taskDetails._id}-${taskDetails.deadline ?? ''}`}
           task={taskDetails}
           saveTaskDetails={updateTaskDetails}
+          clearExpiredDeadline={clearExpiredDeadline}
           closeTaskDetails={() => setTaskDetailsId(null)}
         />
       )}

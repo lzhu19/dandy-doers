@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DeadlineCountdown from './DeadlineCountdown';
 
 function getLocalDateParts(date) {
   return {
@@ -154,6 +155,13 @@ function TaskDetails(props) {
               Created at {createdAt.toLocaleString()}
             </time>
           )}
+          <DeadlineCountdown
+            deadline={props.task.deadline}
+            className="task-created-at task-deadline-countdown task-deadline-countdown-popup"
+            onExpire={() =>
+              props.clearExpiredDeadline?.(props.task._id, props.task.deadline)
+            }
+          />
 
           <div className="task-deadline-toggle">
             <input
