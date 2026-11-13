@@ -81,10 +81,19 @@ function updateTask(id, updatedFields) {
   });
 }
 
+function updateDeadline(id, deadline) {
+  return taskModel.findById(id).then((task) => {
+    if (!task) return null;
+    task.deadline = deadline;
+    return task.save();
+  });
+}
+
 function archiveTask(id) {
   return taskModel.findById(id).then((task) => {
     if (!task) return null;
     task.archived = true;
+    task.deadline = null;
     return task.save();
   });
 }
@@ -93,6 +102,7 @@ function deleteTask(id) {
   return taskModel.findById(id).then((task) => {
     if (!task) return null;
     task.deleted = true;
+    task.deadline = null;
     return task.save();
   });
 }
@@ -156,6 +166,7 @@ export {
   findTaskByName,
   addTask,
   updateTask,
+  updateDeadline,
   deleteTask,
   permanentlyDeleteTask,
   archiveTask,
@@ -165,4 +176,5 @@ export {
   restoreDeletedTask,
   getDeletedTasks,
   updateTaskListId,
+  cleanTags,
 };

@@ -32,6 +32,10 @@ const TaskSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    deadline: {
+      type: Date,
+      default: null,
+    },
   },
   { collection: 'tasks_list', timestamps: true }
 );

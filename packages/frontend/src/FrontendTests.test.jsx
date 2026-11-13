@@ -2,6 +2,7 @@
 import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
 import {
+  act,
   render,
   screen,
   waitFor,
@@ -23,6 +24,7 @@ import ArchiveList from './ArchiveList';
 import DeleteList from './DeleteList';
 import Table from './Table';
 import TaskDetails from './TaskDetails';
+import DeadlineCountdown from './DeadlineCountdown';
 
 const list = { _id: 'list-1', name: 'School' };
 const activeTask = {
@@ -164,6 +166,22 @@ afterAll(() => {
   vi.unstubAllGlobals();
 });
 
+// Test for open/closed dialog.
+if (typeof HTMLDialogElement.prototype.showModal !== 'function') {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '');
+  };
+}
+
+if (typeof HTMLDialogElement.prototype.close !== 'function') {
+  HTMLDialogElement.prototype.close = function () {
+    if (!this.open) return;
+
+    this.removeAttribute('open');
+    this.dispatchEvent(new Event('close'));
+  };
+}
+
 //Tests
 //Rendering
 describe('rendering', () => {
@@ -173,6 +191,241 @@ describe('rendering', () => {
     expect(
       await screen.findByText('You currently have no task lists')
     ).toBeInTheDocument();
+  });
+
+  it('shows deadline tasks in Upcoming without making them interactive', async () => {
+    const user = userEvent.setup();
+    const originalFetch = fetch;
+    const firstUpcoming = {
+      ...activeTask,
+      deadline: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    };
+    const secondUpcoming = {
+      ...activeTask,
+      _id: 'task-4',
+      name: 'Essay',
+      listId: 'list-2',
+      deadline: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    };
+    const noDeadlineTask = {
+      ...activeTask,
+      _id: 'task-5',
+      name: 'No deadline',
+    };
+    const { fetchMock } = installApi({
+      tasks: [secondUpcoming, noDeadlineTask, firstUpcoming],
+      lists: [list, { _id: 'list-2', name: 'Work' }],
+    });
+
+    try {
+      await openApp();
+
+      const upcomingTable = document.querySelector('.upcoming-task-table');
+      const upcomingRows = within(upcomingTable).getAllByRole('row');
+      expect(upcomingRows).toHaveLength(2);
+      expect(within(upcomingRows[0]).getByText('Homework')).toBeInTheDocument();
+      expect(within(upcomingRows[0]).getByText(/Due in/)).toBeInTheDocument();
+      expect(within(upcomingRows[1]).getByText('Essay')).toBeInTheDocument();
+      expect(
+        within(upcomingTable).queryByText('No deadline')
+      ).not.toBeInTheDocument();
+      expect(
+        within(upcomingTable).queryByRole('button')
+      ).not.toBeInTheDocument();
+
+      const requestCount = fetchMock.mock.calls.length;
+      await user.click(within(upcomingRows[0]).getByText('Homework'));
+      expect(fetchMock).toHaveBeenCalledTimes(requestCount);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    } finally {
+      vi.stubGlobal('fetch', originalFetch);
+    }
+  });
+
+  it('opens and closes the Upcoming settings window', async () => {
+    const user = userEvent.setup();
+    const originalFetch = fetch;
+    installApi();
+
+    try {
+      await openApp();
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Select which tasks to show...',
+        })
+      );
+      expect(
+        screen.getByRole('dialog', { name: 'Upcoming task settings' })
+      ).toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole('button', { name: 'Close Upcoming settings' })
+      );
+      expect(
+        screen.queryByRole('dialog', { name: 'Upcoming task settings' })
+      ).not.toBeInTheDocument();
+    } finally {
+      vi.stubGlobal('fetch', originalFetch);
+    }
+  });
+
+  it('filters Upcoming by an applied day period and remembers the selection', async () => {
+    const user = userEvent.setup();
+    const originalFetch = fetch;
+    const originalSettings = localStorage.getItem('upcomingTaskSettings');
+    localStorage.removeItem('upcomingTaskSettings');
+    installApi({
+      tasks: [
+        {
+          ...activeTask,
+          deadline: new Date(
+            Date.now() + 2 * 24 * 60 * 60 * 1000
+          ).toISOString(),
+        },
+        {
+          ...activeTask,
+          _id: 'task-6',
+          name: 'Later task',
+          deadline: new Date(
+            Date.now() + 10 * 24 * 60 * 60 * 1000
+          ).toISOString(),
+        },
+      ],
+    });
+
+    try {
+      await openApp();
+
+      const upcomingTable = document.querySelector('.upcoming-task-table');
+      expect(
+        within(upcomingTable).getByRole('row', { name: /Homework/ })
+      ).toBeInTheDocument();
+      expect(
+        within(upcomingTable).getByRole('row', { name: /Later task/ })
+      ).toBeInTheDocument();
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Select which tasks to show...',
+        })
+      );
+      const dialog = screen.getByRole('dialog', {
+        name: 'Upcoming task settings',
+      });
+      expect(
+        within(dialog).getByRole('radio', {
+          name: 'Show all tasks with deadlines',
+        })
+      ).toBeChecked();
+      await user.click(
+        within(dialog).getByRole('radio', {
+          name: 'Show all tasks due within a set period of time...',
+        })
+      );
+
+      const daysInput = within(dialog).getByLabelText('Number of days (1-30)');
+      expect(daysInput).toHaveValue(1);
+      expect(daysInput).toHaveAttribute('min', '1');
+      expect(daysInput).toHaveAttribute('max', '30');
+      await user.clear(daysInput);
+      await user.type(daysInput, '3');
+      await user.click(within(dialog).getByRole('button', { name: 'Apply' }));
+
+      expect(
+        within(upcomingTable).getByRole('row', { name: /Homework/ })
+      ).toBeInTheDocument();
+      expect(
+        within(upcomingTable).queryByRole('row', { name: /Later task/ })
+      ).not.toBeInTheDocument();
+      expect(JSON.parse(localStorage.getItem('upcomingTaskSettings'))).toEqual({
+        mode: 'period',
+        days: 3,
+      });
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Select which tasks to show...',
+        })
+      );
+      const reopenedDialog = screen.getByRole('dialog', {
+        name: 'Upcoming task settings',
+      });
+      expect(
+        within(reopenedDialog).getByRole('radio', {
+          name: 'Show all tasks due within a set period of time...',
+        })
+      ).toBeChecked();
+      expect(
+        within(reopenedDialog).getByLabelText('Number of days (1-30)')
+      ).toHaveValue(3);
+    } finally {
+      vi.stubGlobal('fetch', originalFetch);
+      if (originalSettings === null) {
+        localStorage.removeItem('upcomingTaskSettings');
+      } else {
+        localStorage.setItem('upcomingTaskSettings', originalSettings);
+      }
+    }
+  });
+
+  it('updates Upcoming when a task enters the selected period', async () => {
+    const now = new Date('2027-01-15T10:00:00.000Z');
+    const nowTime = now.getTime();
+    const dateNowSpy = vi.spyOn(Date, 'now').mockReturnValue(nowTime);
+    const originalFetch = fetch;
+    const originalSettings = localStorage.getItem('upcomingTaskSettings');
+    const originalSetInterval = globalThis.setInterval;
+    const refreshCallbacks = [];
+    const setIntervalSpy = vi
+      .spyOn(globalThis, 'setInterval')
+      .mockImplementation((callback, delay, ...args) => {
+        if (delay === 5 * 60 * 1000) {
+          refreshCallbacks.push(callback);
+          return 999;
+        }
+        return originalSetInterval(callback, delay, ...args);
+      });
+    localStorage.setItem(
+      'upcomingTaskSettings',
+      JSON.stringify({ mode: 'period', days: 1 })
+    );
+    installApi({
+      tasks: [
+        {
+          ...activeTask,
+          deadline: new Date(
+            now.getTime() + 24 * 60 * 60 * 1000 + 500
+          ).toISOString(),
+        },
+      ],
+    });
+
+    try {
+      await openApp();
+
+      const upcomingBox = document.querySelector('.upcoming-box');
+      expect(
+        within(upcomingBox).queryByText('Homework')
+      ).not.toBeInTheDocument();
+      expect(refreshCallbacks).toHaveLength(1);
+
+      dateNowSpy.mockReturnValue(nowTime + 5 * 60 * 1000);
+      act(() => {
+        refreshCallbacks[0]();
+      });
+
+      expect(within(upcomingBox).getByText('Homework')).toBeInTheDocument();
+    } finally {
+      vi.stubGlobal('fetch', originalFetch);
+      if (originalSettings === null) {
+        localStorage.removeItem('upcomingTaskSettings');
+      } else {
+        localStorage.setItem('upcomingTaskSettings', originalSettings);
+      }
+      setIntervalSpy.mockRestore();
+      dateNowSpy.mockRestore();
+    }
   });
 });
 
@@ -1380,7 +1633,9 @@ describe('list dialog workflows', () => {
     );
     await openApp();
 
-    await user.click(screen.getAllByRole('button', { name: 'School' })[1]);
+    await user.click(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    );
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
     await user.clear(renameInput);
     fireEvent.blur(renameInput);
@@ -1403,7 +1658,9 @@ describe('list dialog workflows', () => {
     );
     await openApp();
 
-    await user.click(screen.getAllByRole('button', { name: 'School' })[1]);
+    await user.click(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    );
     const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
     await user.clear(renameInput);
     await user.type(renameInput, renamedList.name);
@@ -1416,6 +1673,154 @@ describe('list dialog workflows', () => {
       )
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument();
+  });
+  it('closes the create dialog through cancel and clears its input', async () => {
+    const user = userEvent.setup();
+    installApi();
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: '+ Add List' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a list' });
+    await user.type(
+      within(dialog).getByRole('textbox', { name: 'List name' }),
+      'Temporary list'
+    );
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(
+      screen.queryByRole('dialog', { name: 'Create a list' })
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '+ Add List' }));
+    expect(screen.getByRole('textbox', { name: 'List name' })).toHaveValue('');
+  });
+
+  it('closes the delete dialog through cancel without deleting the list', async () => {
+    const user = userEvent.setup();
+    installApi();
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: 'Delete List' }));
+    const dialog = screen.getByRole('dialog', {
+      name: 'Permanently delete list?',
+    });
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(
+      screen.queryByRole('dialog', { name: 'Permanently delete list?' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    ).toBeInTheDocument();
+  });
+  it('keeps the create dialog open when cancelled while creating', async () => {
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const { routes } = installApi({ lists: [list, secondList] });
+
+    let finishRequest;
+    routes.set('POST http://localhost:8000/lists', async () => {
+      await new Promise((resolve) => {
+        finishRequest = resolve;
+      });
+      return jsonResponse({}, 500);
+    });
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: '+ Add List' }));
+    const dialog = screen.getByRole('dialog', { name: 'Create a list' });
+    await user.type(
+      within(dialog).getByRole('textbox', { name: 'List name' }),
+      'New list'
+    );
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
+
+    expect(
+      within(dialog).getByRole('button', { name: 'Creating...' })
+    ).toBeDisabled();
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(dialog).toHaveAttribute('open');
+    expect(
+      within(dialog).getByRole('textbox', { name: 'List name' })
+    ).toHaveValue('New list');
+
+    finishRequest();
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+  });
+  it('keeps the delete dialog open when cancelled while deleting', async () => {
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const { routes } = installApi({ lists: [list, secondList] });
+
+    let finishRequest;
+    routes.set('DELETE http://localhost:8000/lists/list-1', async () => {
+      await new Promise((resolve) => {
+        finishRequest = resolve;
+      });
+      return jsonResponse({}, 500);
+    });
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: 'Delete List' }));
+    const dialog = screen.getByRole('dialog', {
+      name: 'Permanently delete list?',
+    });
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Permanently Delete' })
+    );
+
+    expect(
+      within(dialog).getByRole('button', { name: 'Deleting...' })
+    ).toBeDisabled();
+
+    const cancelEvent = new Event('cancel', { cancelable: true });
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(dialog).toHaveAttribute('open');
+
+    finishRequest();
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
+  });
+  it('keeps the delete dialog open when the list name updates', async () => {
+    // the test below is to test skipping opening dialog, where dialog is true and !dialog is false
+    const user = userEvent.setup();
+    const secondList = { _id: 'list-2', name: 'Work' };
+    const renamedList = { ...list, name: 'Classes' };
+    const { routes } = installApi({ lists: [list, secondList] });
+    routes.set('PUT http://localhost:8000/lists/list-1', async () =>
+      jsonResponse(renamedList)
+    );
+    await openApp();
+
+    await user.click(
+      within(screen.getByRole('main')).getByRole('button', { name: 'School' })
+    );
+    const renameInput = screen.getByRole('textbox', { name: 'Rename list' });
+    await user.clear(renameInput);
+    await user.type(renameInput, 'Classes');
+
+    fireEvent.blur(renameInput);
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete List' })
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: 'Permanently delete list?',
+    });
+
+    expect(await within(dialog).findByText(/Classes/)).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('open');
   });
 });
 
@@ -1602,6 +2007,250 @@ describe('Table interactions', () => {
 });
 
 describe('TaskDetails component', () => {
+  it('updates the due countdown and calls expiry handling', () => {
+    vi.useFakeTimers();
+    try {
+      const now = new Date(2027, 0, 15, 10, 0, 0);
+      vi.setSystemTime(now);
+      const onExpire = vi.fn();
+      const deadline = new Date(now.getTime() + 60_000).toISOString();
+      const { getByText } = render(
+        <DeadlineCountdown
+          deadline={deadline}
+          onExpire={onExpire}
+          className="countdown"
+        />
+      );
+
+      expect(
+        getByText('Due in 0 days, 0 hours, and 1 minute')
+      ).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+
+      expect(onExpire).toHaveBeenCalledWith(deadline);
+      expect(
+        getByText('Due in 0 days, 0 hours, and 0 minutes')
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('unchecks the deadline and hides its controls when the task deadline clears', () => {
+    const props = {
+      task: { ...activeTask, deadline: '2027-01-15T12:30:00.000Z' },
+      saveTaskDetails: vi.fn(),
+      clearExpiredDeadline: vi.fn(),
+      closeTaskDetails: vi.fn(),
+    };
+    const { rerender } = render(<TaskDetails {...props} />);
+    expect(
+      screen.getByRole('checkbox', { name: 'Set deadline?' })
+    ).toBeChecked();
+
+    rerender(
+      <TaskDetails
+        key="task-1-cleared"
+        {...props}
+        task={{ ...props.task, deadline: null }}
+      />
+    );
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Set deadline?' })
+    ).not.toBeChecked();
+    expect(screen.queryByLabelText('Date Due')).not.toBeInTheDocument();
+  });
+
+  it('shows deadline date and time controls when enabled', async () => {
+    const user = userEvent.setup();
+    render(
+      <TaskDetails
+        task={activeTask}
+        saveTaskDetails={vi.fn()}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByLabelText('Date Due')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Set deadline?' }));
+
+    const now = new Date();
+    const defaultDeadline = new Date(now);
+    defaultDeadline.setMinutes(defaultDeadline.getMinutes() + 1, 0, 0);
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const defaultDate = `${defaultDeadline.getFullYear()}-${String(defaultDeadline.getMonth() + 1).padStart(2, '0')}-${String(defaultDeadline.getDate()).padStart(2, '0')}`;
+    const dateInput = screen.getByLabelText('Date Due');
+    expect(dateInput).toHaveAttribute('min', today);
+    expect(dateInput).toHaveValue(defaultDate);
+    expect(screen.getByText('Time Due (XX:XX)')).toBeInTheDocument();
+    expect(screen.getByText(':')).toBeInTheDocument();
+    expect(screen.getByLabelText('Deadline hour')).toBeInTheDocument();
+    expect(screen.getByLabelText('Deadline minute')).toBeInTheDocument();
+    expect(screen.getByLabelText('Deadline AM or PM')).toBeInTheDocument();
+    expect(
+      screen.getByRole('checkbox', { name: '24-hour time' })
+    ).not.toBeChecked();
+  });
+
+  it('switches between 12-hour and 24-hour time without changing the selected time', async () => {
+    const user = userEvent.setup();
+    const deadline = new Date(2027, 0, 15, 13, 5);
+    render(
+      <TaskDetails
+        task={{ ...activeTask, deadline: deadline.toISOString() }}
+        saveTaskDetails={vi.fn()}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText('Deadline hour')).toHaveValue('01');
+    expect(screen.getByLabelText('Deadline AM or PM')).toHaveValue('PM');
+    await user.click(screen.getByRole('checkbox', { name: '24-hour time' }));
+    expect(screen.getByLabelText('Deadline hour')).toHaveValue('13');
+    expect(
+      screen.queryByLabelText('Deadline AM or PM')
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: '24-hour time' }));
+    expect(screen.getByLabelText('Deadline hour')).toHaveValue('01');
+    expect(screen.getByLabelText('Deadline AM or PM')).toHaveValue('PM');
+  });
+
+  it('rejects a deadline in the past', async () => {
+    const user = userEvent.setup();
+    const saveTaskDetails = vi.fn();
+    render(
+      <TaskDetails
+        task={activeTask}
+        saveTaskDetails={saveTaskDetails}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: 'Set deadline?' }));
+    fireEvent.change(screen.getByLabelText('Deadline hour'), {
+      target: { value: '00' },
+    });
+    fireEvent.change(screen.getByLabelText('Deadline minute'), {
+      target: { value: '00' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveTaskDetails).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Choose a valid future deadline.'
+    );
+  });
+
+  it('rechecks the deadline when saving if the popup has remained open', () => {
+    vi.useFakeTimers();
+    try {
+      const now = new Date(2027, 0, 15, 10, 0, 0);
+      vi.setSystemTime(now);
+      const saveTaskDetails = vi.fn();
+      render(
+        <TaskDetails
+          task={activeTask}
+          saveTaskDetails={saveTaskDetails}
+          closeTaskDetails={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Set deadline?' }));
+      fireEvent.change(screen.getByLabelText('Date Due'), {
+        target: { value: '2027-01-15' },
+      });
+      fireEvent.change(screen.getByLabelText('Deadline hour'), {
+        target: { value: '10' },
+      });
+      fireEvent.change(screen.getByLabelText('Deadline minute'), {
+        target: { value: '01' },
+      });
+
+      vi.setSystemTime(new Date(2027, 0, 15, 10, 2, 0));
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+      expect(saveTaskDetails).not.toHaveBeenCalled();
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Choose a valid future deadline.'
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('saves an enabled deadline as a timestamp', async () => {
+    const user = userEvent.setup();
+    const saveTaskDetails = vi.fn().mockResolvedValue(undefined);
+    render(
+      <TaskDetails
+        task={activeTask}
+        saveTaskDetails={saveTaskDetails}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: 'Set deadline?' }));
+    const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const dateValue = `${futureDate.getFullYear()}-${String(
+      futureDate.getMonth() + 1
+    ).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+    fireEvent.change(screen.getByLabelText('Date Due'), {
+      target: { value: dateValue },
+    });
+    await user.selectOptions(screen.getByLabelText('Deadline hour'), '11');
+    await user.selectOptions(screen.getByLabelText('Deadline minute'), '59');
+    await user.selectOptions(screen.getByLabelText('Deadline AM or PM'), 'PM');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveTaskDetails).toHaveBeenCalledWith('task-1', {
+      name: activeTask.name,
+      notes: '',
+      tags: [],
+      deadline: new Date(`${dateValue}T23:59:00`).toISOString(),
+    });
+  });
+
+  it('clears an existing deadline when its checkbox is unchecked', async () => {
+    const user = userEvent.setup();
+    const saveTaskDetails = vi.fn().mockResolvedValue(undefined);
+    render(
+      <TaskDetails
+        task={{ ...activeTask, deadline: '2027-01-15T12:30:00.000Z' }}
+        saveTaskDetails={saveTaskDetails}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: 'Set deadline?' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveTaskDetails).toHaveBeenCalledWith('task-1', {
+      name: activeTask.name,
+      notes: '',
+      tags: [],
+      deadline: null,
+    });
+  });
+
+  it('displays the task creation time as a right-aligned subtitle', () => {
+    const createdAt = '2026-10-28T06:00:00.000Z';
+    const { container } = render(
+      <TaskDetails
+        task={{ ...activeTask, createdAt }}
+        saveTaskDetails={vi.fn()}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    const timestamp = container.querySelector('.task-created-at');
+    expect(timestamp).toHaveAttribute('datetime', createdAt);
+    expect(timestamp).toHaveTextContent(/^Created at /);
+    expect(timestamp).toHaveTextContent(/\d/);
+  });
+
   it('rejects a blank name and saves edited name and notes', async () => {
     const user = userEvent.setup();
     const saveTaskDetails = vi.fn();
@@ -1630,7 +2279,30 @@ describe('TaskDetails component', () => {
     expect(saveTaskDetails).toHaveBeenCalledWith('task-1', {
       name: 'Read chapter',
       notes: 'Pages 1-10',
+      tags: [],
     });
+  });
+  it('closes task details with cancel', () => {
+    const closeTaskDetails = vi.fn();
+    const saveTaskDetails = vi.fn();
+
+    render(
+      <TaskDetails
+        task={{ _id: 'task-1', name: 'Study', notes: '' }}
+        closeTaskDetails={closeTaskDetails}
+        saveTaskDetails={saveTaskDetails}
+      />
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Task details' });
+    const cancelEvent = new Event('cancel', { cancelable: true });
+
+    fireEvent(dialog, cancelEvent);
+
+    expect(cancelEvent.defaultPrevented).toBe(true);
+    expect(dialog).not.toHaveAttribute('open');
+    expect(closeTaskDetails).toHaveBeenCalledTimes(1);
+    expect(saveTaskDetails).not.toHaveBeenCalled();
   });
 });
 
@@ -2740,25 +3412,6 @@ describe('taskDetails', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
   //
-  it('closes the popup when bg is clicked', async () => {
-    const user = userEvent.setup();
-    const popup = await OpenTaskDetails(user);
-
-    await user.click(popup.parentElement);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('keeps popup open when clicking inside it', async () => {
-    const user = userEvent.setup();
-    const popup = await OpenTaskDetails(user);
-
-    await user.click(
-      within(popup).getByRole('heading', { name: 'Task details' })
-    );
-    expect(
-      screen.queryByRole('dialog', { name: 'Task details' })
-    ).toBeInTheDocument();
-  });
 
   it('updates the task after successfully saving its details', async () => {
     const user = userEvent.setup();
@@ -2767,6 +3420,7 @@ describe('taskDetails', () => {
       name: 'Updated homework',
       listId: 'list-1',
       notes: 'Review notes',
+      tags: [],
     };
     const secondTask = { _id: 'task-4', name: 'Essay', listId: list._id };
     const { routes, fetchMock } = installApi({
@@ -2803,6 +3457,90 @@ describe('taskDetails', () => {
           name: updatedTask.name,
           notes: updatedTask.notes,
         }),
+      })
+    );
+  });
+
+  it('clears an expired deadline and unchecks it in the details popup', async () => {
+    const user = userEvent.setup();
+    const expiredTask = {
+      ...activeTask,
+      deadline: '2000-01-01T00:00:00.000Z',
+    };
+    const { routes, fetchMock } = installApi({ tasks: [expiredTask] });
+    routes.set('PUT http://localhost:8000/tasks/task-1/deadline', async () =>
+      jsonResponse({ ...expiredTask, deadline: null })
+    );
+
+    await openApp();
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost:8000/tasks/task-1/deadline',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({ deadline: null }),
+        })
+      );
+    });
+    await user.click(screen.getByRole('button', { name: 'Open task details' }));
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Set deadline?' })
+    ).not.toBeChecked();
+    expect(screen.queryByLabelText('Date Due')).not.toBeInTheDocument();
+  });
+
+  it('saves the deadline through the deadline endpoint', async () => {
+    const user = userEvent.setup();
+    const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    deadline.setHours(23, 59, 0, 0);
+    const deadlineValue = deadline.toISOString();
+    const { routes, fetchMock } = installApi({ tasks: [activeTask] });
+    routes.set('PUT http://localhost:8000/tasks/task-1', async () =>
+      jsonResponse(activeTask)
+    );
+    routes.set('PUT http://localhost:8000/tasks/task-1/deadline', async () =>
+      jsonResponse({ ...activeTask, deadline: deadlineValue })
+    );
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: 'Open task details' }));
+    const detailsDialog = screen.getByRole('dialog');
+    await user.click(
+      within(detailsDialog).getByRole('checkbox', { name: 'Set deadline?' })
+    );
+    const localDate = new Date(deadlineValue);
+    const dateValue = `${localDate.getFullYear()}-${String(
+      localDate.getMonth() + 1
+    ).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
+    fireEvent.change(within(detailsDialog).getByLabelText('Date Due'), {
+      target: { value: dateValue },
+    });
+    await user.selectOptions(
+      within(detailsDialog).getByLabelText('Deadline hour'),
+      '11'
+    );
+    await user.selectOptions(
+      within(detailsDialog).getByLabelText('Deadline minute'),
+      '59'
+    );
+    await user.selectOptions(
+      within(detailsDialog).getByLabelText('Deadline AM or PM'),
+      'PM'
+    );
+    await user.click(
+      within(detailsDialog).getByRole('button', { name: 'Save' })
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-1/deadline',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ deadline: deadlineValue }),
       })
     );
   });
@@ -3024,7 +3762,11 @@ describe('task request failures', () => {
         'http://localhost:8000/tasks/task-1',
         expect.objectContaining({
           method: 'PUT',
-          body: JSON.stringify({ name: 'Homework', notes: 'Details' }),
+          body: JSON.stringify({
+            name: 'Homework',
+            notes: 'Details',
+            tags: [],
+          }),
         })
       );
       expect(fetchMock).toHaveBeenCalledWith(
@@ -4799,6 +5541,17 @@ describe('bulk moving', () => {
       name: 'Choose a list to move task(s) to',
     });
 
+    dialog.removeAttribute('open');
+    fireEvent(dialog, new Event('close'));
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Choose a list to move task(s) to' })
+    ).not.toBeInTheDocument();
+
+    await user.click(moveButton);
+
+    expect(dialog).toHaveAttribute('open');
+
     await user.click(
       within(dialog).getByRole('button', { name: 'Other Stuff' })
     );
@@ -5120,71 +5873,6 @@ describe('bulk moving', () => {
     expect(
       screen.getByRole('cell', { name: 'Do a backflip' })
     ).toBeInTheDocument();
-
-    // Verify the backend request
-    expect(fetch).not.toHaveBeenCalledWith(
-      expect.stringMatching(/\/move$/),
-      expect.objectContaining({ method: 'PATCH' })
-    );
-  });
-
-  it('closes when the backdrop is clicked', async () => {
-    const user = userEvent.setup();
-
-    vi.mocked(fetch).mockImplementation((url, options = {}) => {
-      if (url === 'http://localhost:8000/lists' && !options.method) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () =>
-            Promise.resolve([
-              { _id: 'list-123', name: 'Cool Stuff' },
-              { _id: 'list-456', name: 'Other Stuff' },
-            ]),
-        });
-      }
-
-      if (url === 'http://localhost:8000/tasks' && !options.method) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () =>
-            Promise.resolve([
-              {
-                _id: 'task-123',
-                name: 'Do a backflip',
-                listId: 'list-123',
-              },
-            ]),
-        });
-      }
-
-      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
-    });
-
-    render(<MyApp />);
-    // Validate that tasks exist.
-    const taskOne = await screen.findByRole('cell', { name: 'Do a backflip' });
-
-    // Find the checkboxes assosciated with each task.
-    const taskOneCheckbox = within(taskOne.closest('tr')).getByRole('checkbox');
-
-    await user.click(taskOneCheckbox);
-    await user.click(
-      screen.getByRole('button', { name: 'Move Task To A Different List' })
-    );
-
-    const dialog = screen.getByRole('dialog', {
-      name: 'Choose a list to move task(s) to',
-    });
-
-    await user.click(dialog.parentElement);
-
-    expect(
-      screen.queryByRole('dialog', { name: 'Choose a list to move task(s) to' })
-    ).not.toBeInTheDocument();
-    expect(taskOneCheckbox).toBeChecked();
-    expect(screen.getByText('1 selected')).toBeInTheDocument();
 
     // Verify the backend request
     expect(fetch).not.toHaveBeenCalledWith(

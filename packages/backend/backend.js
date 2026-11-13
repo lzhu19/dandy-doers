@@ -8,6 +8,7 @@ import {
   findTaskById,
   addTask,
   updateTask,
+  updateDeadline,
   deleteTask,
   permanentlyDeleteTask,
   reorderTasks,
@@ -286,6 +287,36 @@ app.put('/tasks/:id', (req, res) => {
     .catch((error) => {
       console.error('Could not update task name: ', error);
       res.status(500).send('Could not update task name.');
+    });
+});
+
+app.put('/tasks/:id/deadline', (req, res) => {
+  const { deadline } = req.body ?? {};
+  let deadlineDate = null;
+
+  if (deadline !== null) {
+    if (typeof deadline !== 'string') {
+      return res.status(400).send('A valid deadline timestamp is required.');
+    }
+
+    deadlineDate = new Date(deadline);
+    if (Number.isNaN(deadlineDate.getTime())) {
+      return res.status(400).send('A valid deadline timestamp is required.');
+    }
+    if (deadlineDate.getTime() <= Date.now()) {
+      return res.status(400).send('The deadline must be in the future.');
+    }
+  }
+
+  updateDeadline(req.params.id, deadlineDate)
+    .then((task) =>
+      task
+        ? res.status(200).json(task)
+        : res.status(404).send('Task not found. Cannot update.')
+    )
+    .catch((error) => {
+      console.error('Could not update task deadline: ', error);
+      res.status(500).send('Could not update task deadline.');
     });
 });
 
