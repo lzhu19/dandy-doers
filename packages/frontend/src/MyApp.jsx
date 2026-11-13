@@ -439,32 +439,48 @@ function MyApp() {
   }
 
   //
-  function updateTaskDetails(id, updatedFields) {
-    // updates a task's name and notes for given id
-    const promise = fetch(`http://localhost:8000/tasks/${id}`, {
-      method: 'PUT',
-      headers: addAuthHeader({
-        'Content-type': 'application/json',
-      }),
-      body: JSON.stringify(updatedFields),
-    });
-
-    promise
-      .then((response) => {
-        if (response.status === 200) return response.json();
-        return null;
-      })
-      .then((updatedTask) => {
-        if (updatedTask !== null) {
-          setTasks((currentTasks) =>
-            currentTasks.map((task) => (task._id === id ? updatedTask : task))
-          );
-          setTaskDetailsId(null);
-        }
-      })
-      .catch((error) => {
-        console.log(error);
+  async function updateTaskDetails(id, updatedFields) {
+    const { deadline, ...taskFields } = updatedFields;
+    try {
+      const response = await fetch(`http://localhost:8000/tasks/${id}`, {
+        method: 'PUT',
+        headers: addAuthHeader({
+          'Content-type': 'application/json',
+        }),
+        body: JSON.stringify(taskFields),
       });
+      if (response.status !== 200) {
+        throw new Error(`Unable to update task details (${response.status}).`);
+      }
+
+      let updatedTask = await response.json();
+      if (Object.hasOwn(updatedFields, 'deadline')) {
+        const deadlineResponse = await fetch(
+          `http://localhost:8000/tasks/${id}/deadline`,
+          {
+            method: 'PUT',
+            headers: addAuthHeader({
+              'Content-type': 'application/json',
+            }),
+            body: JSON.stringify({ deadline }),
+          }
+        );
+        if (deadlineResponse.status !== 200) {
+          throw new Error(
+            `Unable to update task deadline (${deadlineResponse.status}).`
+          );
+        }
+        updatedTask = await deadlineResponse.json();
+      }
+
+      setTasks((currentTasks) =>
+        currentTasks.map((task) => (task._id === id ? updatedTask : task))
+      );
+      setTaskDetailsId(null);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   }
 
   async function updateListName(id, newEdit) {

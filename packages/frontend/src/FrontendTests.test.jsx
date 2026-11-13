@@ -1602,6 +1602,138 @@ describe('Table interactions', () => {
 });
 
 describe('TaskDetails component', () => {
+  it('shows deadline date and time controls when enabled', async () => {
+    const user = userEvent.setup();
+    render(
+      <TaskDetails
+        task={activeTask}
+        saveTaskDetails={vi.fn()}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByLabelText('Date Due')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Set deadline?' }));
+
+    const now = new Date();
+    const defaultDeadline = new Date(now);
+    defaultDeadline.setMinutes(defaultDeadline.getMinutes() + 1, 0, 0);
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const defaultDate = `${defaultDeadline.getFullYear()}-${String(defaultDeadline.getMonth() + 1).padStart(2, '0')}-${String(defaultDeadline.getDate()).padStart(2, '0')}`;
+    const dateInput = screen.getByLabelText('Date Due');
+    expect(dateInput).toHaveAttribute('min', today);
+    expect(dateInput).toHaveValue(defaultDate);
+    expect(screen.getByText('Time Due (XX:XX)')).toBeInTheDocument();
+    expect(screen.getByText(':')).toBeInTheDocument();
+    expect(screen.getByLabelText('Deadline hour')).toBeInTheDocument();
+    expect(screen.getByLabelText('Deadline minute')).toBeInTheDocument();
+    expect(screen.getByLabelText('Deadline AM or PM')).toBeInTheDocument();
+    expect(
+      screen.getByRole('checkbox', { name: '24-hour time' })
+    ).not.toBeChecked();
+  });
+
+  it('switches between 12-hour and 24-hour time without changing the selected time', async () => {
+    const user = userEvent.setup();
+    const deadline = new Date(2027, 0, 15, 13, 5);
+    render(
+      <TaskDetails
+        task={{ ...activeTask, deadline: deadline.toISOString() }}
+        saveTaskDetails={vi.fn()}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText('Deadline hour')).toHaveValue('01');
+    expect(screen.getByLabelText('Deadline AM or PM')).toHaveValue('PM');
+    await user.click(screen.getByRole('checkbox', { name: '24-hour time' }));
+    expect(screen.getByLabelText('Deadline hour')).toHaveValue('13');
+    expect(
+      screen.queryByLabelText('Deadline AM or PM')
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: '24-hour time' }));
+    expect(screen.getByLabelText('Deadline hour')).toHaveValue('01');
+    expect(screen.getByLabelText('Deadline AM or PM')).toHaveValue('PM');
+  });
+
+  it('rejects a deadline in the past', async () => {
+    const user = userEvent.setup();
+    const saveTaskDetails = vi.fn();
+    render(
+      <TaskDetails
+        task={activeTask}
+        saveTaskDetails={saveTaskDetails}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: 'Set deadline?' }));
+    fireEvent.change(screen.getByLabelText('Deadline hour'), {
+      target: { value: '00' },
+    });
+    fireEvent.change(screen.getByLabelText('Deadline minute'), {
+      target: { value: '00' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveTaskDetails).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Choose a valid future deadline.'
+    );
+  });
+
+  it('saves an enabled deadline as a timestamp', async () => {
+    const user = userEvent.setup();
+    const saveTaskDetails = vi.fn().mockResolvedValue(undefined);
+    render(
+      <TaskDetails
+        task={activeTask}
+        saveTaskDetails={saveTaskDetails}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: 'Set deadline?' }));
+    const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const dateValue = `${futureDate.getFullYear()}-${String(
+      futureDate.getMonth() + 1
+    ).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+    fireEvent.change(screen.getByLabelText('Date Due'), {
+      target: { value: dateValue },
+    });
+    await user.selectOptions(screen.getByLabelText('Deadline hour'), '11');
+    await user.selectOptions(screen.getByLabelText('Deadline minute'), '59');
+    await user.selectOptions(screen.getByLabelText('Deadline AM or PM'), 'PM');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveTaskDetails).toHaveBeenCalledWith('task-1', {
+      name: activeTask.name,
+      notes: '',
+      deadline: new Date(`${dateValue}T23:59:00`).toISOString(),
+    });
+  });
+
+  it('clears an existing deadline when its checkbox is unchecked', async () => {
+    const user = userEvent.setup();
+    const saveTaskDetails = vi.fn().mockResolvedValue(undefined);
+    render(
+      <TaskDetails
+        task={{ ...activeTask, deadline: '2027-01-15T12:30:00.000Z' }}
+        saveTaskDetails={saveTaskDetails}
+        closeTaskDetails={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: 'Set deadline?' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(saveTaskDetails).toHaveBeenCalledWith('task-1', {
+      name: activeTask.name,
+      notes: '',
+      deadline: null,
+    });
+  });
+
   it('displays the task creation time as a right-aligned subtitle', () => {
     const createdAt = '2026-10-28T06:00:00.000Z';
     const { container } = render(
@@ -2819,6 +2951,60 @@ describe('taskDetails', () => {
           name: updatedTask.name,
           notes: updatedTask.notes,
         }),
+      })
+    );
+  });
+
+  it('saves the deadline through the deadline endpoint', async () => {
+    const user = userEvent.setup();
+    const deadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    deadline.setHours(23, 59, 0, 0);
+    const deadlineValue = deadline.toISOString();
+    const { routes, fetchMock } = installApi({ tasks: [activeTask] });
+    routes.set('PUT http://localhost:8000/tasks/task-1', async () =>
+      jsonResponse(activeTask)
+    );
+    routes.set('PUT http://localhost:8000/tasks/task-1/deadline', async () =>
+      jsonResponse({ ...activeTask, deadline: deadlineValue })
+    );
+    await openApp();
+
+    await user.click(screen.getByRole('button', { name: 'Open task details' }));
+    const detailsDialog = screen.getByRole('dialog');
+    await user.click(
+      within(detailsDialog).getByRole('checkbox', { name: 'Set deadline?' })
+    );
+    const localDate = new Date(deadlineValue);
+    const dateValue = `${localDate.getFullYear()}-${String(
+      localDate.getMonth() + 1
+    ).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`;
+    fireEvent.change(within(detailsDialog).getByLabelText('Date Due'), {
+      target: { value: dateValue },
+    });
+    await user.selectOptions(
+      within(detailsDialog).getByLabelText('Deadline hour'),
+      '11'
+    );
+    await user.selectOptions(
+      within(detailsDialog).getByLabelText('Deadline minute'),
+      '59'
+    );
+    await user.selectOptions(
+      within(detailsDialog).getByLabelText('Deadline AM or PM'),
+      'PM'
+    );
+    await user.click(
+      within(detailsDialog).getByRole('button', { name: 'Save' })
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8000/tasks/task-1/deadline',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ deadline: deadlineValue }),
       })
     );
   });
