@@ -676,7 +676,7 @@ tr.drop-target td {
 
 .task-deadline-countdown-list {
   margin-top: 4px;
-  text-align: right;
+  text-align: left;
 }
 
 .task-deadline-countdown-popup {
