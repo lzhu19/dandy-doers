@@ -739,7 +739,7 @@ tr.drop-target td {
   padding: 10px 15px;
   border-radius: 15px;
   z-index: 1000;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   animation: fadeIn 0.3s ease-in;
   display: flex;
   align-items: center;
@@ -759,7 +759,7 @@ tr.drop-target td {
 
 .undo-button:hover {
   color: #3a3042;
-  background-color:  #fffbf2;
+  background-color: #fffbf2;
   border: none;
   text-decoration: underline;
 }
