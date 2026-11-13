@@ -7,6 +7,9 @@ import DeleteList from './DeleteList';
 import ListSection from './ListSection';
 import SearchBar from './SearchBar';
 import TaskDetails from './TaskDetails';
+import Login from './Login';
+
+const INVALID_TOKEN = 'Invalid token';
 
 function MyApp() {
   const [tasks, setTasks] = useState([]);
@@ -38,13 +41,84 @@ function MyApp() {
   const popupTimeout = useRef(null);
   const [popupTaskId, setPopupTaskId] = useState(null);
 
+  const [token, setToken] = useState(
+    localStorage.getItem('token') ?? INVALID_TOKEN
+  );
+
+  function saveToken(newToken) {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+  }
+
+  const [message, setMessage] = useState('');
+
+  function addAuthHeader(otherHeaders = {}) {
+    if (token === INVALID_TOKEN) {
+      return otherHeaders;
+    } else {
+      return {
+        ...otherHeaders,
+        Authorization: `Bearer ${token}`,
+      };
+    }
+  }
+
+  function loginUser(creds) {
+    return fetch(`http://localhost:8000/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(creds),
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          setMessage('');
+          return response.json().then((payload) => saveToken(payload.token));
+        }
+        setMessage('Login failed. Incorrect username or password.');
+      })
+      .catch((error) => {
+        setMessage(`Login Error: ${error}`);
+      });
+  }
+
+  function signupUser(creds) {
+    return fetch(`http://localhost:8000/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(creds),
+    })
+      .then((response) => {
+        if (response.status === 201) {
+          setMessage('');
+          return response.json().then((payload) => saveToken(payload.token));
+        }
+        if (response.status === 409) {
+          setMessage(
+            'Username already exists, time to channel that creativity.'
+          );
+        } else {
+          setMessage(
+            `Sign up failed. Please enter a valid username and password.`
+          );
+        }
+      })
+      .catch((error) => setMessage(`Signup Error: ${error}`));
+  }
+
   function fetchTasks() {
-    const promise = fetch('http://localhost:8000/tasks');
-    return promise;
+    return fetch('http://localhost:8000/tasks', {
+      headers: addAuthHeader(),
+    });
   }
 
   function fetchLists() {
-    return fetch('http://localhost:8000/lists');
+    return fetch('http://localhost:8000/lists', {
+      headers: addAuthHeader(),
+    });
   }
 
   async function createList(event) {
@@ -60,9 +134,9 @@ function MyApp() {
     try {
       const response = await fetch('http://localhost:8000/lists', {
         method: 'POST',
-        headers: {
+        headers: addAuthHeader({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ name }),
       });
       if (response.status !== 201) {
@@ -94,7 +168,7 @@ function MyApp() {
     try {
       const response = await fetch(
         `http://localhost:8000/lists/${currentList._id}`,
-        { method: 'DELETE' }
+        { method: 'DELETE', headers: addAuthHeader() }
       );
       if (response.status !== 204) {
         throw new Error(`Unable to delete list (${response.status}).`);
@@ -153,9 +227,9 @@ function MyApp() {
   function postTask(job) {
     const promise = fetch('http://localhost:8000/tasks', {
       method: 'POST',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ ...job, listId: selectedListId }),
     });
     return promise;
@@ -166,9 +240,9 @@ function MyApp() {
     console.log('Archive clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/archive`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ archived: true }),
     });
 
@@ -202,9 +276,9 @@ function MyApp() {
     console.log('Delete clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/delete`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ deleted: true }),
     });
 
@@ -244,9 +318,9 @@ function MyApp() {
       `http://localhost:8000/tasks/${id}/restore-archived`,
       {
         method: 'PUT',
-        headers: {
+        headers: addAuthHeader({
           'Content-type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ archived: false }),
       }
     );
@@ -276,9 +350,9 @@ function MyApp() {
     console.log('Restore deleted clicked:', id); // for debugging purposes, remove later
     const promise = fetch(`http://localhost:8000/tasks/${id}/restore-deleted`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ deleted: false }),
     });
 
@@ -306,6 +380,7 @@ function MyApp() {
     // removes a task with the given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
       method: 'DELETE',
+      headers: addAuthHeader(),
     });
 
     promise
@@ -332,9 +407,9 @@ function MyApp() {
     // updates a task's name for given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ name: newEdit }),
     });
 
@@ -368,9 +443,9 @@ function MyApp() {
     // updates a task's name and notes for given id
     const promise = fetch(`http://localhost:8000/tasks/${id}`, {
       method: 'PUT',
-      headers: {
+      headers: addAuthHeader({
         'Content-type': 'application/json',
-      },
+      }),
       body: JSON.stringify(updatedFields),
     });
 
@@ -403,9 +478,9 @@ function MyApp() {
     try {
       const response = await fetch(`http://localhost:8000/lists/${id}`, {
         method: 'PUT',
-        headers: {
+        headers: addAuthHeader({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ name }),
       });
       if (response.status !== 200) {
@@ -445,9 +520,9 @@ function MyApp() {
 
     return fetch(`http://localhost:8000/tasks/${id}/move`, {
       method: 'PATCH',
-      headers: {
+      headers: addAuthHeader({
         'Content-Type': 'application/json',
-      },
+      }),
       body: JSON.stringify({ listId: targetListId }),
     })
       .then((response) => {
@@ -476,6 +551,7 @@ function MyApp() {
   }
 
   useEffect(() => {
+    if (token === INVALID_TOKEN) return;
     fetchTasks()
       .then((res) => res.json()) // convert response to json
       .then((tasks) => {
@@ -510,7 +586,7 @@ function MyApp() {
       .catch((error) => {
         console.log(error);
       });
-  }, []); // empty array here indicates that hook should be called only when component first mounts
+  }, [token]);
 
   const currentList =
     lists.find((list) => list._id === selectedListId) ?? lists[0];
@@ -557,9 +633,9 @@ function MyApp() {
         `http://localhost:8000/lists/${currentList._id}/reorder-tasks`,
         {
           method: 'PUT',
-          headers: {
+          headers: addAuthHeader({
             'Content-Type': 'application/json',
-          },
+          }),
           body: JSON.stringify({
             taskIds: reordered.map((task) => task._id),
           }),
@@ -579,6 +655,7 @@ function MyApp() {
   const createListDialogRef = useRef(null);
   useEffect(() => {
     const dialog = createListDialogRef.current;
+    if (!dialog) return; 
 
     if (isCreateListOpen && !dialog.open) {
       dialog.showModal();
@@ -590,6 +667,7 @@ function MyApp() {
   const deleteListDialogRef = useRef(null);
   useEffect(() => {
     const dialog = deleteListDialogRef.current;
+    if (!dialog) return; 
 
     if (isDeleteListOpen && currentList) {
       if (!dialog.open) dialog.showModal();
@@ -597,6 +675,16 @@ function MyApp() {
       dialog.close();
     }
   }, [isDeleteListOpen, currentList]);
+  
+  if (token === INVALID_TOKEN) {
+    return (
+      <Login
+        handleLogin={loginUser}
+        handleSignup={signupUser}
+        message={message}
+      />
+    );
+  }
 
   return (
     <>
@@ -641,17 +729,19 @@ function MyApp() {
                     {listRenameError}
                   </p>
                 )}
-                <button
-                  className="delete-list-icon-button"
-                  type="button"
-                  aria-label="Delete List"
-                  onClick={() => {
-                    setListDeleteError('');
-                    setIsDeleteListOpen(true);
-                  }}
-                >
-                  <TrashIcon />
-                </button>
+                {editingListId !== currentList._id && (
+                  <button
+                    className="delete-list-icon-button"
+                    type="button"
+                    aria-label="Delete List"
+                    onClick={() => {
+                      setListDeleteError('');
+                      setIsDeleteListOpen(true);
+                    }}
+                  >
+                    <TrashIcon />
+                  </button>
+                )}
               </div>
               <hr className="header-underline" />
 

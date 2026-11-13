@@ -25,6 +25,7 @@ import {
   getLists,
   updateListName,
 } from './list-services.js';
+import { registerUser, authenticateUser, loginUser } from './auth.js';
 
 const app = express(); // setup api
 const port = 8000; // port number
@@ -33,6 +34,14 @@ const port = 8000; // port number
 
 app.use(cors());
 app.use(express.json());
+
+////////// AUTH //////////
+
+app.post('/signup', registerUser);
+app.post('/login', loginUser);
+
+app.use('/tasks', authenticateUser);
+app.use('/lists', authenticateUser);
 
 ////////// GET //////////
 
