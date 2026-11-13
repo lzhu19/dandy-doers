@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Table from './Table';
 import Form from './Form';
 import './ToDoList.css';
@@ -35,6 +35,12 @@ function MyApp() {
 
   const [deletedTasks, setDeletedTasks] = useState([]);
   const [isMoveTaskOpen, setIsMoveTaskOpen] = useState(false);
+  
+  
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupUndo, setPopupUndo] = useState(null);
+  const popupTimeout = useRef(null);
+  const [popupTaskId, setPopupTaskId] = useState(null);
 
   const [token, setToken] = useState(
     localStorage.getItem('token') ?? INVALID_TOKEN
@@ -192,6 +198,33 @@ function MyApp() {
       setIsDeletingList(false);
     }
   }
+const displayPopup = (message, undoAction, taskId) => {
+  setPopupMessage(message);
+  setPopupUndo(() => undoAction);
+  setPopupTaskId(taskId);
+
+  clearTimeout(popupTimeout.current);
+
+  popupTimeout.current = setTimeout(() => {
+    setPopupMessage("");
+    setPopupUndo(null);
+    setPopupTaskId(null);
+  }, 10000);
+};
+
+
+const dismissPopup = () => {
+  clearTimeout(popupTimeout.current);
+  setPopupMessage("");
+  setPopupUndo(null);
+  setPopupTaskId(null);
+};
+
+const dismissPopupForTask = (id) => {
+  if (popupTaskId === id) {
+    dismissPopup();
+  }
+};
 
   function postTask(job) {
     const promise = fetch('http://localhost:8000/tasks', {
@@ -232,6 +265,11 @@ function MyApp() {
           setSelectedTaskId((previous) =>
             previous.filter((taskId) => taskId !== id)
           );
+          displayPopup(
+            "Task archived",
+            () => restoreArchivedTask(id),
+            id
+          );
         }
       })
       .catch((error) => {
@@ -270,6 +308,12 @@ function MyApp() {
           setSelectedTaskId((previous) =>
             previous.filter((taskId) => taskId !== id)
           );
+
+          displayPopup(
+            "Task deleted",
+            () => restoreDeletedTask(id),
+            id
+          );
         }
       })
       .catch((error) => {
@@ -299,9 +343,12 @@ function MyApp() {
       .then((restoredTask) => {
         if (restoredTask !== null) {
           setTasks((currentTasks) => [...currentTasks, restoredTask]);
+          
           setArchivedTasks((currentArchivedTasks) =>
             currentArchivedTasks.filter((task) => task._id !== id)
+
           );
+          dismissPopupForTask(id);
         }
       })
       .catch((error) => {
@@ -328,9 +375,11 @@ function MyApp() {
       .then((restoredTask) => {
         if (restoredTask !== null) {
           setTasks((currentTasks) => [...currentTasks, restoredTask]);
+          
           setDeletedTasks((currentDeletedTasks) =>
             currentDeletedTasks.filter((task) => task._id !== id)
           );
+          dismissPopupForTask(id);
         }
       })
       .catch((error) => {
@@ -758,7 +807,23 @@ function MyApp() {
           )}
         </main>
       </div>
+        {popupMessage && (
+  <div className="popup">
+    <span>{popupMessage}</span>
 
+    {popupUndo && (
+      <button
+        className="undo-button"
+        onClick={() => {
+          popupUndo();
+          dismissPopup();
+        }}
+      >
+        UNDO
+      </button>
+    )}
+  </div>
+)}
       {isCreateListOpen && (
         <div className="list-dialog-backdrop">
           <section
