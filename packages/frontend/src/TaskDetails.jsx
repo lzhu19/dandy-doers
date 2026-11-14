@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import TagPill from './TagPill';
 import DeadlineCountdown from './DeadlineCountdown';
 
 function getLocalDateParts(date) {
@@ -33,6 +34,9 @@ function to24Hour(hour, meridiem) {
 function TaskDetails(props) {
   const [name, setName] = useState(props.task.name);
   const [notes, setNotes] = useState(props.task.notes ?? '');
+  const [tags, setTags] = useState(props.task.tags ?? []);
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [tagInput, setTagInput] = useState('');
   const detailsDialogRef = useRef(null);
 
   useEffect(() => {
@@ -98,7 +102,7 @@ function TaskDetails(props) {
     setSaveError('');
     setIsSaving(true);
 
-    const updatedFields = { name, notes };
+    const updatedFields = { name, notes, tags };
 
     if (hasDeadline || props.task.deadline) {
       updatedFields.deadline = hasDeadline
@@ -115,6 +119,32 @@ function TaskDetails(props) {
     }
   }
 
+  //adds typed tag (if valid), then closes input
+  function addTag() {
+    const newTag = tagInput.trim().slice(0, 20);
+    const isDuplicate = tags.some(
+      (tag) => tag.toLowerCase() === newTag.toLowerCase()
+    );
+    if (newTag && !isDuplicate && tags.length < 5) {
+      setTags([...tags, newTag]);
+    }
+    setTagInput('');
+    setIsAddingTag(false);
+  }
+
+  function handleTagKeyDown(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addTag();
+    } else if (event.key === 'Escape') {
+      event.stopPropagation();
+      setIsAddingTag(false);
+    }
+  }
+
+  function removeTag(tagToRemove) {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
+  }
   return (
     <dialog
       ref={detailsDialogRef}
@@ -198,6 +228,7 @@ function TaskDetails(props) {
               setSaveError('');
             }}
           />
+
           <label htmlFor="task-deadline-enabled">Set deadline?</label>
         </div>
 
@@ -365,6 +396,43 @@ function TaskDetails(props) {
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
         />
+
+        <span className="task-details-label">Tags</span>
+        <div className="task-details-tags">
+          {tags.map((tag, index) => (
+            <TagPill
+              key={tag}
+              tag={tag}
+              colorIndex={index}
+              onRemove={() => removeTag(tag)}
+            />
+          ))}
+
+          {isAddingTag ? (
+            <input
+              className="tag-input"
+              type="text"
+              aria-label="New tag"
+              placeholder="Tag name"
+              maxLength={20}
+              autoFocus
+              value={tagInput}
+              onChange={(event) => setTagInput(event.target.value)}
+              onKeyDown={handleTagKeyDown}
+              onBlur={addTag}
+            />
+          ) : (
+            tags.length < 5 && (
+              <button
+                className="add-tag-button"
+                type="button"
+                onClick={() => setIsAddingTag(true)}
+              >
+                + Add tag
+              </button>
+            )
+          )}
+        </div>
       </div>
     </dialog>
   );

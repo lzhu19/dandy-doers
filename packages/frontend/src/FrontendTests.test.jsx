@@ -2208,6 +2208,7 @@ describe('TaskDetails component', () => {
     expect(saveTaskDetails).toHaveBeenCalledWith('task-1', {
       name: activeTask.name,
       notes: '',
+      tags: [],
       deadline: new Date(`${dateValue}T23:59:00`).toISOString(),
     });
   });
@@ -2229,6 +2230,7 @@ describe('TaskDetails component', () => {
     expect(saveTaskDetails).toHaveBeenCalledWith('task-1', {
       name: activeTask.name,
       notes: '',
+      tags: [],
       deadline: null,
     });
   });
@@ -2277,6 +2279,7 @@ describe('TaskDetails component', () => {
     expect(saveTaskDetails).toHaveBeenCalledWith('task-1', {
       name: 'Read chapter',
       notes: 'Pages 1-10',
+      tags: [],
     });
   });
   it('closes task details with cancel', () => {
@@ -3417,6 +3420,7 @@ describe('taskDetails', () => {
       name: 'Updated homework',
       listId: 'list-1',
       notes: 'Review notes',
+      tags: [],
     };
     const secondTask = { _id: 'task-4', name: 'Essay', listId: list._id };
     const { routes, fetchMock } = installApi({
@@ -3758,7 +3762,11 @@ describe('task request failures', () => {
         'http://localhost:8000/tasks/task-1',
         expect.objectContaining({
           method: 'PUT',
-          body: JSON.stringify({ name: 'Homework', notes: 'Details' }),
+          body: JSON.stringify({
+            name: 'Homework',
+            notes: 'Details',
+            tags: [],
+          }),
         })
       );
       expect(fetchMock).toHaveBeenCalledWith(

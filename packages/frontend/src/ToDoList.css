@@ -1197,6 +1197,126 @@ input.search-bar {
     no-repeat 13px center;
 }
 
+/* Tags */
+
+.task-details-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-pill,
+.add-tag-button,
+.add-tag-button:hover,
+.add-tag-button:focus,
+.add-tag-button:active {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.tag-pill {
+  border: 1.5px solid transparent;
+  padding-right: 12px;
+  color: #3a3042;
+}
+
+.add-tag-button,
+.add-tag-button:hover,
+.add-tag-button:focus,
+.add-tag-button:active {
+  margin: 0;
+  border: 1.5px dashed #9e8eab;
+  background: transparent;
+  color: #594b65;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.tag-remove-button,
+.tag-remove-button:hover,
+.tag-remove-button:focus,
+.tag-remove-button:active {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #3a3042;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.task-details-body .tag-input {
+  box-sizing: border-box;
+  width: 150px;
+  height: 36px;
+  margin: 0;
+  padding: 0 20px;
+  border: 1.5px solid #9e8eab;
+  border-radius: 999px;
+  background: #fffbf2;
+  color: #3a3042;
+  font-size: 14px;
+}
+
+.tag-color-0 {
+  background: #ffdf8c;
+}
+.tag-color-1 {
+  background: #e4dcec;
+}
+.tag-color-2 {
+  background: #cfe8d5;
+}
+.tag-color-3 {
+  background: #f7d3c4;
+}
+.tag-color-4 {
+  background: #cfe2f3;
+}
+.tag-color-5 {
+  background: #f3d0e0;
+}
+
+.tag-remove-button:hover,
+.tag-remove-button:focus-visible {
+  background: rgba(58, 48, 66, 0.15);
+}
+
+.add-tag-button:hover {
+  border-color: #806e8e;
+  background: #fffbf2;
+}
+
+.add-tag-button:focus-visible {
+  outline: 2px solid #806e8e;
+  outline-offset: 2px;
+}
+
+.task-details-body .tag-input:focus {
+  outline: none;
+  border-color: #806e8e;
+}
+
+.task-details-body .tag-input::placeholder {
+  color: #9e8eab;
+}
 .archive-list-buttons {
   display: flex;
   align-items: center;
@@ -1239,4 +1359,8 @@ input.search-bar {
 
 #new-list-name:focus-visible {
   text-decoration: underline;
+}
+
+.task-details-popup input[type='date'] {
+  color-scheme: light;
 }

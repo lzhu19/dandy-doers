@@ -75,6 +75,8 @@ function updateTask(id, updatedFields) {
     if (!task) return null;
     if (updatedFields.name !== undefined) task.name = updatedFields.name;
     if (updatedFields.notes !== undefined) task.notes = updatedFields.notes;
+    if (updatedFields.tags !== undefined)
+      task.tags = cleanTags(updatedFields.tags);
     return task.save();
   });
 }
@@ -142,6 +144,22 @@ function updateTaskListId(id, targetListId) {
   });
 }
 
+//trims, drops repeats/blanks, max 5 tags 20 chars each
+function cleanTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  const seen = new Set();
+  const cleaned = [];
+  for (const tag of tags) {
+    if (typeof tag !== 'string') continue;
+    const trimmed = tag.trim().slice(0, 20);
+    const key = trimmed.toLowerCase();
+    if (!trimmed || seen.has(key)) continue;
+    seen.add(key);
+    cleaned.push(trimmed);
+  }
+  return cleaned.slice(0, 5);
+}
+
 export {
   getTasks,
   findTaskById,
@@ -158,4 +176,5 @@ export {
   restoreDeletedTask,
   getDeletedTasks,
   updateTaskListId,
+  cleanTags,
 };
