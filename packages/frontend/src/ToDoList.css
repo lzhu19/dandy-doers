@@ -1360,3 +1360,7 @@ input.search-bar {
 #new-list-name:focus-visible {
   text-decoration: underline;
 }
+
+.task-details-popup input[type='date'] {
+  color-scheme: light;
+}
