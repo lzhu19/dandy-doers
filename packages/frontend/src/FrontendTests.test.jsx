@@ -3456,6 +3456,7 @@ describe('taskDetails', () => {
         body: JSON.stringify({
           name: updatedTask.name,
           notes: updatedTask.notes,
+          tags: [],
         }),
       })
     );
