@@ -218,6 +218,43 @@ function TaskDetails(props) {
           }
         />
 
+        <span className="task-details-label">Tags</span>
+        <div className="task-details-tags">
+          {tags.map((tag, index) => (
+            <TagPill
+              key={tag}
+              tag={tag}
+              colorIndex={index}
+              onRemove={() => removeTag(tag)}
+            />
+          ))}
+
+          {isAddingTag ? (
+            <input
+              className="tag-input"
+              type="text"
+              aria-label="New tag"
+              placeholder="Tag name"
+              maxLength={20}
+              autoFocus
+              value={tagInput}
+              onChange={(event) => setTagInput(event.target.value)}
+              onKeyDown={handleTagKeyDown}
+              onBlur={addTag}
+            />
+          ) : (
+            tags.length < 5 && (
+              <button
+                className="add-tag-button"
+                type="button"
+                onClick={() => setIsAddingTag(true)}
+              >
+                + Add tag
+              </button>
+            )
+          )}
+        </div>
+
         <div className="task-deadline-toggle">
           <input
             id="task-deadline-enabled"
@@ -396,43 +433,6 @@ function TaskDetails(props) {
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
         />
-
-        <span className="task-details-label">Tags</span>
-        <div className="task-details-tags">
-          {tags.map((tag, index) => (
-            <TagPill
-              key={tag}
-              tag={tag}
-              colorIndex={index}
-              onRemove={() => removeTag(tag)}
-            />
-          ))}
-
-          {isAddingTag ? (
-            <input
-              className="tag-input"
-              type="text"
-              aria-label="New tag"
-              placeholder="Tag name"
-              maxLength={20}
-              autoFocus
-              value={tagInput}
-              onChange={(event) => setTagInput(event.target.value)}
-              onKeyDown={handleTagKeyDown}
-              onBlur={addTag}
-            />
-          ) : (
-            tags.length < 5 && (
-              <button
-                className="add-tag-button"
-                type="button"
-                onClick={() => setIsAddingTag(true)}
-              >
-                + Add tag
-              </button>
-            )
-          )}
-        </div>
       </div>
     </dialog>
   );
