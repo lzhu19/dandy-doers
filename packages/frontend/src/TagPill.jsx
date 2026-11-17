@@ -6,7 +6,7 @@ function TagPill(props) {
         <button
           className="tag-remove-button"
           type="button"
-          aria-label={'Remove tag ${props.tag'}
+          aria-label={'Remove tag ${props.tag}'}
           onClick={props.onRemove}
         >
           <svg viewBox="0 0 10 10" width="10" height="10" aria-hidden="true">
