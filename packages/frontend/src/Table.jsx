@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import DeadlineCountdown from './DeadlineCountdown';
+import TagIndicator from './TagIndicator';
 
 function TableHeader(props) {
   const selectAll = props.taskData.every((row) =>
@@ -242,6 +243,7 @@ function TableBody(props) {
 
         <td className="task-actions-cell">
           <div className="task-actions">
+            <TagIndicator tags={row.tags} />
             <button
               className="edit-icon-button"
               aria-label="Open task details"
